@@ -1,0 +1,24 @@
+{
+  "name": "spectrum-tk",
+  "version": "1.0.0",
+  "description": "Tk theme for Spectrum, Adobe's design system",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tclmonster/spectrum-tk.git"
+  },
+  "keywords": [],
+  "author": "Bandoti Ltd.",
+  "license": "BSD-3-Clause",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tclmonster/spectrum-tk/issues"
+  },
+  "homepage": "https://github.com/tclmonster/spectrum-tk#readme",
+  "dependencies": {
+    "@adobe/spectrum-tokens": "^13.15.1"
+  }
+}
