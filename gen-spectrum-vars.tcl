@@ -11,8 +11,8 @@ package require tjson
 set verbose [::apply {{} {
     set found [lsearch -exact $::argv "-verbose"]
     if {$found != -1} {
-	set ::argv [lreplace $::argv $found $found]
-	return 1
+        set ::argv [lreplace $::argv $found $found]
+        return 1
     }
     return 0
 }}]
@@ -35,7 +35,7 @@ set var [list]
 
 proc rgb_to_hex {rgb_string} {
     if {[regexp {^{(\S+)}$} $rgb_string -> varname]} {
-	return "\$var($varname)" ;# An alias to another value
+        return "\$var($varname)" ;# An alias to another value
     }
 
     if {[regexp {rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)} $rgb_string -> r g b]} {
@@ -48,11 +48,11 @@ proc rgb_to_hex {rgb_string} {
 
 proc parse_json_file {file} {
     try {
-	set fd [open $file r]
-	return [::tjson::json_to_simple [read $fd]]
+        set fd [open $file r]
+        return [::tjson::json_to_simple [read $fd]]
 
     } finally {
-	catch {close $fd}
+        catch {close $fd}
     }
 }
 
@@ -71,35 +71,35 @@ proc cmpkeys {a b} {
 
 proc parse_colors {color_dict} {
     foreach key [lsort -command cmpkeys [dict keys $color_dict]] {
-	try {
-	    if {[dict exists $color_dict $key sets]} {
-		set lightval [rgb_to_hex [dict get $color_dict $key sets light value]]
-		set darkval  [rgb_to_hex [dict get $color_dict $key sets dark  value]]
-		lappend ::var $key "\[expr {\$var(darkmode) ? $darkval : $lightval}\]"
+        try {
+            if {[dict exists $color_dict $key sets]} {
+                set lightval [rgb_to_hex [dict get $color_dict $key sets light value]]
+                set darkval  [rgb_to_hex [dict get $color_dict $key sets dark  value]]
+                lappend ::var $key "\[expr {\$var(darkmode) ? $darkval : $lightval}\]"
 
-	    } else {
-		lappend ::var $key [rgb_to_hex [dict get $color_dict $key value]]
-	    }
+            } else {
+                lappend ::var $key [rgb_to_hex [dict get $color_dict $key value]]
+            }
 
-	} trap {RGBSTR INVALID} res {
-	    if {$::verbose} { puts stderr $res }
-	}
+        } trap {RGBSTR INVALID} res {
+            if {$::verbose} { puts stderr $res }
+        }
     }
 }
 
 # Process values for layout & font JSON entries.
 proc val_to_num {px_string} {
     if {[regexp {^{(\S+)}$} $px_string -> varname]} {
-	# Handle variable references
-	if {[string match "*font*" $varname]} {
-	    if {! [string match "*font-size*" $varname]} {
-		# Only support font-size because Tk fonts work
-		# differently than CSS fonts. Fonts will be created
-		# and referenced directly.
-		throw {PXVAL INVALID} "Invalid size format: $px_string"
-	    }
-	}
-	return "\$var($varname)"
+        # Handle variable references
+        if {[string match "*font*" $varname]} {
+            if {! [string match "*font-size*" $varname]} {
+                # Only support font-size because Tk fonts work
+                # differently than CSS fonts. Fonts will be created
+                # and referenced directly.
+                throw {PXVAL INVALID} "Invalid size format: $px_string"
+            }
+        }
+        return "\$var($varname)"
     }
     if {[regexp {^(-?\d+)px$} $px_string -> px_value]} {
         return "\[scale_pixel $px_value\]"
@@ -114,17 +114,17 @@ proc val_to_num {px_string} {
 
 proc parse_layout {layout_dict} {
     foreach key [lsort -command cmpkeys [dict keys $layout_dict]] {
-	try {
-	    if {[dict exists $layout_dict $key sets]} {
-		lappend ::var $key [val_to_num [dict get $layout_dict $key sets desktop value]]
+        try {
+            if {[dict exists $layout_dict $key sets]} {
+                lappend ::var $key [val_to_num [dict get $layout_dict $key sets desktop value]]
 
-	    } else {
-		lappend ::var $key [val_to_num [dict get $layout_dict $key value]]
-	    }
+            } else {
+                lappend ::var $key [val_to_num [dict get $layout_dict $key value]]
+            }
 
-	} trap {PXVAL INVALID} res {
-	    if {$::verbose} { puts stderr $res }
-	}
+        } trap {PXVAL INVALID} res {
+            if {$::verbose} { puts stderr $res }
+        }
     }
 }
 
@@ -136,32 +136,32 @@ proc parse_font {font_dict} {
     # This is required because Adobe's fonts are proprietary and so the
     # best available system font should be calculated.
     foreach key [lsort -command cmpkeys [dict keys $font_dict]] {
-	if {[dict exists $font_dict $key value fontFamily]} {
-	    set family [dict get $font_dict $key value fontFamily]
-	    set size [dict get $font_dict $key value fontSize]
-	    set bold [string match "*bold*" [dict get $font_dict $key value fontWeight]]
-	    lappend ::var $key "\[${::NS}::priv::get_or_create_font $family $size $bold\]"
-	    continue
-	}
-	switch -glob -- $key {
-	    *size*    -
-	    *height*  -
-	    *margin*  -
-	    *color*   -
-	    *spacing* {
-		try {
-		    if {[dict exists $font_dict $key sets]} {
-			lappend ::var $key [val_to_num [dict get $font_dict $key sets desktop value]]
+        if {[dict exists $font_dict $key value fontFamily]} {
+            set family [dict get $font_dict $key value fontFamily]
+            set size [dict get $font_dict $key value fontSize]
+            set bold [string match "*bold*" [dict get $font_dict $key value fontWeight]]
+            lappend ::var $key "\[${::NS}::priv::get_or_create_font $family $size $bold\]"
+            continue
+        }
+        switch -glob -- $key {
+            *size*    -
+            *height*  -
+            *margin*  -
+            *color*   -
+            *spacing* {
+                try {
+                    if {[dict exists $font_dict $key sets]} {
+                        lappend ::var $key [val_to_num [dict get $font_dict $key sets desktop value]]
 
-		    } else {
-			lappend ::var $key [val_to_num [dict get $font_dict $key value]]
-		    }
+                    } else {
+                        lappend ::var $key [val_to_num [dict get $font_dict $key value]]
+                    }
 
-		} trap {PXVAL INVALID} res {
-		    if {$::verbose} { puts stderr $res }
-		}
-	    }
-	}
+                } trap {PXVAL INVALID} res {
+                    if {$::verbose} { puts stderr $res }
+                }
+            }
+        }
     }
 }
 
@@ -174,48 +174,48 @@ oo::class create DependencySorter {
         set deps    {}
         set pattern "\\\$var\\((\[^)]+)\\)"
         set matches [regexp -all -inline -- $pattern $value]
-	if {$matches ne ""} {
-	    foreach {_ dep} $matches {
-		if {$dep eq "darkmode"} { continue }
-		lappend deps $dep
-	    }
-	}
+        if {$matches ne ""} {
+            foreach {_ dep} $matches {
+                if {$dep eq "darkmode"} { continue }
+                lappend deps $dep
+            }
+        }
         return $deps
     }
 
     method Dfs {key value} {
-	set Visited($key) 1
-	set deps [my GetDependencies $value]
-	foreach dep $deps {
-	    if {! [dict exists $Elements $dep] || $Visited($dep) eq "skipped"} {
-		set Visited($key) "skipped"
-		if {$::verbose} {
-		    puts stderr "Skipping \"$key\" due to missing dependency \"$dep\""
-		}
-		return
-	    }
-	    if {$Visited($dep) eq "pending"} {
-		my Dfs $dep [dict get $Elements $dep]
+        set Visited($key) 1
+        set deps [my GetDependencies $value]
+        foreach dep $deps {
+            if {! [dict exists $Elements $dep] || $Visited($dep) eq "skipped"} {
+                set Visited($key) "skipped"
+                if {$::verbose} {
+                    puts stderr "Skipping \"$key\" due to missing dependency \"$dep\""
+                }
+                return
+            }
+            if {$Visited($dep) eq "pending"} {
+                my Dfs $dep [dict get $Elements $dep]
 
-	    }
-	}
-	lappend Sorted $key $value
+            }
+        }
+        lappend Sorted $key $value
     }
 
     constructor {elements} {
-	set Elements $elements
+        set Elements $elements
     }
 
     method sort {} {
-	array set Visited {}
-	set Sorted [list]
-	foreach {key _} $Elements { set Visited($key) "pending" }
-	foreach {key value} $Elements {
-	    if {$Visited($key) eq "pending"} {
-		my Dfs $key $value
-	    }
-	}
-	return $Sorted
+        array set Visited {}
+        set Sorted [list]
+        foreach {key _} $Elements { set Visited($key) "pending" }
+        foreach {key value} $Elements {
+            if {$Visited($key) eq "pending"} {
+                my Dfs $key $value
+            }
+        }
+        return $Sorted
     }
 }
 
@@ -241,22 +241,22 @@ namespace eval @NS@ {
 
 try {
     foreach color_file {
-	color-palette.json
-	semantic-color-palette.json
-	color-aliases.json
-	color-component.json
-	icons.json
+        color-palette.json
+        semantic-color-palette.json
+        color-aliases.json
+        color-component.json
+        icons.json
     } {
-	set color_dict [parse_json_file [file join $spectrum_dir $color_file]]
-	parse_colors $color_dict
+        set color_dict [parse_json_file [file join $spectrum_dir $color_file]]
+        parse_colors $color_dict
     }
 
     foreach layout_file {
-	layout.json
-	layout-component.json
+        layout.json
+        layout-component.json
     } {
-	set layout_dict [parse_json_file [file join $spectrum_dir $layout_file]]
-	parse_layout $layout_dict
+        set layout_dict [parse_json_file [file join $spectrum_dir $layout_file]]
+        parse_layout $layout_dict
     }
 
     set font_dict [parse_json_file [file join $spectrum_dir typography.json]]
@@ -265,7 +265,7 @@ try {
     set ::var [toposort $::var]
 
     set variables [join [lmap key [dict keys $var] val [dict values $var] {
-	expr {"set var($key) $val"}
+        expr {"set var($key) $val"}
     }] \n]
 
     set scriptname [file tail [info script]]
