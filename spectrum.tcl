@@ -1,37 +1,39 @@
 
 # Copyright (c) 2025, Bandoti Ltd.
 
+package require Tk 8.6-
+
+package provide spectrum 0.1.0
+
 namespace eval ::spectrum {
     variable var
 
-    if {[tk windowingsystem] eq "win32"} {
-        package require registry
+    proc DarkModeSetting {} {
+	variable PRIV
+	set darkmode 0
+	catch {
+	    if {[tk windowingsystem] eq "win32"} {
+		package require registry
+		set keypath {HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize}
+		set darkmode [expr {[registry get $keypath AppsUseLightTheme] == 0}]
 
-        proc GetDarkModeSetting {} {
-            set keyPath {HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize}
-            try {
-                set appsUseLightTheme [registry get $keyPath AppsUseLightTheme]
-                return [expr {$appsUseLightTheme == 0}]
+	    } elseif {[tk windowingsystem] eq "aqua"} {
+		set istyle [exec defaults read -g AppleInterfaceStyle]
+		set darkmode [expr {$istyle eq "Dark"}]
 
-            } on error {} {
-                return 0
-            }
-        }
-
-    } elseif {[tk windowingsystem] eq "aqua"} {
-        proc GetDarkModeSetting {} {
-            if {[catch {exec defaults read -g AppleInterfaceStyle} res]} {
-                return 0
-            } else {
-                return [expr {$res eq "Dark"}]
-            }
-        }
-
-    } else {
-        proc GetDarkModeSetting {} { return 0 }
+	    } else {
+		set colorscheme_query {qdbus org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop
+		    org.freedesktop.portal.Settings.Read "org.freedesktop.appearance" "color-scheme"
+		}
+		set darkmode [expr {1 == [exec {*}$colorscheme_query]}]
+	    }
+	}
+	return $darkmode
     }
 
-    set var(darkmode) [GetDarkModeSetting]
+    if {![info exists var(darkmode)]} {
+	set var(darkmode) [DarkModeSetting]
+    }
 
     set var(sans-serif-font-family) [::apply {{} {
         set families [switch -- [tk windowingsystem] {
@@ -94,46 +96,54 @@ proc ::spectrum::scale_pixel {pixel} {
     return [expr {int([tk scaling] * $pixel * 72.0/96.0)}] ;# CSS pixel is 1/96.0 inch
 }
 
+
 source [file join [file dirname [info script]] spectrum-vars.tcl]
 
-if {[tk windowingsystem] eq "win32"} {
-    if {! [catch {package require cffi}]} {
-        namespace eval ::spectrum {
-            cffi::alias load win32
 
-            cffi::Wrapper create dwmapi [file join $env(windir) system32 dwmapi.dll]
-            cffi::Wrapper create user32 [file join $env(windir) system32 user32.dll]
-
-            cffi::alias define HRESULT {long nonnegative winerror}
-            dwmapi stdcall DwmSetWindowAttribute HRESULT {
-                hwnd        pointer.HWND
-                dwAttribute DWORD
-                pvAttribute pointer
-                cbAttribute DWORD
-            }
-
-            user32 stdcall GetParent pointer.HWND {
-                hwnd pointer.HWND
-            }
-        }
-
-        proc ::spectrum::SetWindowDarkMode {window value} {
-            set hwndptr [cffi::pointer make [winfo id $window] HWND]
-            cffi::pointer safe $hwndptr
-            set parentptr [GetParent $hwndptr]
-
-            set darkmodeptr [cffi::arena pushframe BOOL]
-            cffi::memory set $darkmodeptr BOOL $value
-
-            set size [cffi::type size BOOL]
-            DwmSetWindowAttribute $parentptr 19 $darkmodeptr $size
-            DwmSetWindowAttribute $parentptr 20 $darkmodeptr $size
-
-            cffi::arena popframe
-            cffi::pointer dispose $hwndptr
-            cffi::pointer dispose $parentptr
-        }
+proc ::spectrum::SetWindowColor {window color} {
+    variable PRIV
+    if {[tk windowingsystem] ne "win32" || [catch {package require cffi}]} {
+        return
     }
+
+    cffi::alias load win32
+    cffi::Wrapper create dwmapi [file join $::env(windir) system32 dwmapi.dll]
+    cffi::Wrapper create user32 [file join $::env(windir) system32 user32.dll]
+
+    cffi::alias define HRESULT {long nonnegative winerror}
+    dwmapi stdcall DwmSetWindowAttribute HRESULT {
+        hwnd pointer.HWND dwAttribute DWORD pvAttribute pointer cbAttribute DWORD
+    }
+
+    user32 stdcall GetParent pointer.HWND {
+        hwnd pointer.HWND
+    }
+
+    proc ::spectrum::HexToBGR {color} {
+	if {[scan $color "#%2x%2x%2x" r g b] != 3} {
+	    return -code error "Invalid hex color format: $color"
+	}
+	return [expr {($b << 16) | ($g << 8) | $r}]
+    }
+
+    proc ::spectrum::SetWindowColor {window color} {
+        set DWMWA_CAPTION_COLOR 35
+        set hwndptr [cffi::pointer make [winfo id $window] HWND]
+        cffi::pointer safe $hwndptr
+        set parentptr [GetParent $hwndptr]
+
+        set colorptr [cffi::arena pushframe DWORD]
+        cffi::memory set $colorptr DWORD [HexToBGR $color]
+
+        set size [cffi::type size DWORD]
+        DwmSetWindowAttribute $parentptr $DWMWA_CAPTION_COLOR $colorptr $size
+
+        cffi::arena popframe
+        cffi::pointer dispose $hwndptr
+        cffi::pointer dispose $parentptr
+    }
+
+    tailcall SetWindowColor $window $color
 }
 
 oo::class create ::spectrum::Theme {
@@ -149,13 +159,12 @@ oo::class create ::spectrum::Theme {
         if {[ttk::style theme use] ne "spectrum"} {
             return
         }
-        if {[info commands ::spectrum::SetWindowDarkMode] ne ""} {
-            bind [winfo class .] <Map> {
-                ::spectrum::SetWindowDarkMode %W $::spectrum::var(darkmode)
-            }
-            bind Toplevel <Map> {
-                ::spectrum::SetWindowDarkMode %W $::spectrum::var(darkmode)
-            }
+        if {[info commands ::spectrum::SetWindowColor] ne ""} {
+            set cmd [list ::spectrum::SetWindowColor %W $::spectrum::var(gray-100)]
+            bind [winfo class .] <Map> $cmd
+            bind Toplevel <Map> $cmd
+
+            {*}[string map {%W .} $cmd]
         }
     }
 
