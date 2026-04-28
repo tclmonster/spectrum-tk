@@ -19,6 +19,6 @@
   },
   "homepage": "https://github.com/tclmonster/spectrum-tk#readme",
   "dependencies": {
-    "@adobe/spectrum-tokens": "^13.15.1"
+    "@adobe/spectrum-tokens": "^14.5.0"
   }
 }

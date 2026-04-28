@@ -246,7 +246,7 @@ set template {
 # Copyright (c) 2025, Bandoti Ltd.
 
 # This file is generated from Adobe Spectrum design tokens.
-# Source: https://github.com/adobe/spectrum-tokens
+# Source: https://github.com/adobe/spectrum-design-data
 # Copyright 2017 Adobe Systems Incorporated
 # Licensed under Apache License 2.0
 
@@ -287,6 +287,7 @@ try {
 
     set scriptname [file tail [info script]]
     set date [clock format [clock seconds] -format "%Y-%m-%d %H:%M:%S"]
+    fconfigure stdout -translation lf
     puts [string map [list \
                           @SCRIPT_NAME@ $scriptname \
                           @DATE@        $date \
