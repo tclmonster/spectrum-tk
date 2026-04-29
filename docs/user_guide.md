@@ -57,9 +57,9 @@ The command form is the idiomatic Tk style and composes directly with `pack`/`gr
 
 | Surface | Status |
 | --- | --- |
-| Theme foundation: ttk styling for TButton (default/Primary/Accent), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TCheckbutton, TRadiobutton, TScrollbar, TSeparator | Implemented |
+| Theme foundation: full ttk coverage (TButton + variants, TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TCheckbutton, TRadiobutton, TPanedwindow, TSizegrip, Treeview, TScrollbar, TSeparator) | Implemented |
 | Theme foundation: SVG indicator elements for Checkbutton + Radiobutton with dark-mode redraw | Implemented |
-| Theme foundation: remaining ttk classes (TPanedwindow, TSizegrip, Treeview) | Pending |
+| Theme foundation: SVG element scrollbar (Win11-style, cross-platform) | Implemented |
 | Theme foundation: classic widget option database (full coverage) | In progress (Text, Menu, Combobox listbox done) |
 | SVG photo factory (`::spectrum::priv::svg_image`) | Implemented |
 | Concrete `spectrum::*` components | Planned |

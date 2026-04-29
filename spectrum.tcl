@@ -413,6 +413,9 @@ oo::class create ::spectrum::Theme {
         my RefreshScale
         my RefreshCheckbutton
         my RefreshRadiobutton
+        my RefreshPanedwindow
+        my RefreshSizegrip
+        my RefreshTreeview
 
         ttk::style configure TSeparator -background $var(gray-300)
     }
@@ -760,6 +763,77 @@ oo::class create ::spectrum::Theme {
                 -padding [list 0 $var(spacing-100)]
             ttk::style map TRadiobutton \
                 -background [list disabled $var(gray-100)] \
+                -foreground [list disabled $var(disabled-content-color)]
+        }
+    }
+
+    method RefreshPanedwindow {} {
+        namespace upvar ::spectrum var var
+        set sash [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        ttk::style theme settings spectrum {
+            ttk::style configure TPanedwindow -background $var(gray-100)
+            ttk::style configure Sash \
+                -background    $sash \
+                -bordercolor   $sash \
+                -lightcolor    $sash \
+                -darkcolor     $sash \
+                -sashthickness [::spectrum::scale_pixel 4] \
+                -gripcount     0
+        }
+    }
+
+    method RefreshSizegrip {} {
+        namespace upvar ::spectrum var var
+        ttk::style theme settings spectrum {
+            ttk::style configure TSizegrip \
+                -background $var(gray-100)
+        }
+    }
+
+    method RefreshTreeview {} {
+        namespace upvar ::spectrum var var
+        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        set heading_bg   [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
+        set heading_hov  [expr {$var(darkmode) ? $var(gray-300) : $var(gray-100)}]
+        set heading_pres [expr {$var(darkmode) ? $var(gray-400) : $var(gray-200)}]
+        set hover_bg     $var(tree-view-row-background-hover)
+        set sel_bg       $var(neutral-background-color-selected-default)
+
+        ttk::style theme settings spectrum {
+            ttk::style configure Treeview \
+                -background      $var(gray-50) \
+                -foreground      $var(body-color) \
+                -fieldbackground $var(gray-50) \
+                -bordercolor     $border \
+                -lightcolor      $border \
+                -darkcolor       $border \
+                -borderwidth     1 \
+                -font            $var(component-m-regular) \
+                -rowheight       [::spectrum::scale_pixel 20]
+            ttk::style map Treeview \
+                -background [list \
+                    disabled            $var(disabled-background-color) \
+                    selected            $sel_bg \
+                    {hover !selected}   $hover_bg] \
+                -foreground [list \
+                    disabled $var(disabled-content-color) \
+                    selected $var(white)]
+
+            ttk::style configure Treeview.Heading \
+                -background  $heading_bg \
+                -foreground  $var(body-color) \
+                -bordercolor $border \
+                -lightcolor  $border \
+                -darkcolor   $border \
+                -borderwidth 1 \
+                -relief      flat \
+                -padding     [list $var(spacing-200) $var(spacing-100)] \
+                -font        $var(component-m-regular)
+            ttk::style map Treeview.Heading \
+                -background [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $heading_pres \
+                    {hover !disabled}   $heading_hov] \
                 -foreground [list disabled $var(disabled-content-color)]
         }
     }
