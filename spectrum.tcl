@@ -114,6 +114,109 @@ proc ::spectrum::priv::svg_image {svg_data} {
     return $img
 }
 
+# Create or refresh a stably-named photo image from an SVG string.
+# Element images that need to update (e.g. on dark-mode toggle) reference
+# photos by name; this lets the element auto-pick up the redrawn pixels.
+proc ::spectrum::priv::set_image {name svg_data} {
+    if {$name in [image names]} {
+        $name configure -data $svg_data -format $::tk::svgFmt
+    } else {
+        image create photo $name -data $svg_data -format $::tk::svgFmt
+    }
+    return $name
+}
+
+# Generate an SVG string for a Spectrum-styled checkbox indicator in a
+# particular ttk state (a list like {} {hover} {selected} {selected disabled}
+# {alternate}).
+proc ::spectrum::priv::checkbox_svg {state} {
+    namespace upvar ::spectrum var var
+    set selected   [expr {"selected"  in $state || "alternate" in $state}]
+    set hover      [expr {"hover"     in $state}]
+    set disabled   [expr {"disabled"  in $state}]
+    set alternate  [expr {"alternate" in $state}]
+
+    if {$disabled} {
+        if {$selected} {
+            set fill   $var(disabled-content-color)
+            set border $var(disabled-content-color)
+        } else {
+            set fill   "none"
+            set border $var(disabled-content-color)
+        }
+        set check $var(gray-50)
+    } elseif {$selected} {
+        if {$hover} {
+            set fill   $var(accent-background-color-hover)
+            set border $var(accent-background-color-hover)
+        } else {
+            set fill   $var(accent-background-color-default)
+            set border $var(accent-background-color-default)
+        }
+        set check $var(white)
+    } else {
+        set fill "none"
+        if {$hover} {
+            set border [expr {$var(darkmode) ? $var(gray-400) : $var(gray-800)}]
+        } else {
+            set border [expr {$var(darkmode) ? $var(gray-500) : $var(gray-700)}]
+        }
+        set check $var(white)
+    }
+
+    if {$alternate} {
+        set path "M3.5 7 L10.5 7"
+    } else {
+        set path "M3.5 7.5 L6 10 L10.5 4.5"
+    }
+    set check_opacity [expr {$selected ? 1 : 0}]
+
+    set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+<rect x="0.5" y="0.5" width="13" height="13" rx="3" fill="%FILL%" stroke="%BORDER%" stroke-width="1"/>
+<path d="%PATH%" fill="none" stroke="%CHECK%" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="%OPAC%"/>
+</svg>}
+    return [string map [list \
+        %FILL%   $fill   %BORDER% $border  %CHECK% $check \
+        %PATH%   $path   %OPAC%   $check_opacity] $tpl]
+}
+
+# Generate an SVG string for a Spectrum-styled radio indicator.
+proc ::spectrum::priv::radio_svg {state} {
+    namespace upvar ::spectrum var var
+    set selected [expr {"selected" in $state}]
+    set hover    [expr {"hover"    in $state}]
+    set disabled [expr {"disabled" in $state}]
+
+    if {$disabled} {
+        set border $var(disabled-content-color)
+        set dot    $var(disabled-content-color)
+    } elseif {$selected} {
+        if {$hover} {
+            set border $var(accent-background-color-hover)
+            set dot    $var(accent-background-color-hover)
+        } else {
+            set border $var(accent-background-color-default)
+            set dot    $var(accent-background-color-default)
+        }
+    } else {
+        if {$hover} {
+            set border [expr {$var(darkmode) ? $var(gray-400) : $var(gray-800)}]
+        } else {
+            set border [expr {$var(darkmode) ? $var(gray-500) : $var(gray-700)}]
+        }
+        set dot $border
+    }
+    set dot_opacity [expr {$selected ? 1 : 0}]
+    set border_w    [expr {$selected ? 1.5 : 1}]
+
+    set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+<circle cx="7" cy="7" r="6.25" fill="none" stroke="%BORDER%" stroke-width="%BW%"/>
+<circle cx="7" cy="7" r="3" fill="%DOT%" opacity="%OPAC%"/>
+</svg>}
+    return [string map [list \
+        %BORDER% $border %DOT% $dot %BW% $border_w %OPAC% $dot_opacity] $tpl]
+}
+
 
 source [file join [file dirname [info script]] spectrum-vars.tcl]
 
@@ -225,6 +328,8 @@ oo::class create ::spectrum::Theme {
         my RefreshNotebook
         my RefreshProgressbar
         my RefreshScale
+        my RefreshCheckbutton
+        my RefreshRadiobutton
 
         ttk::style configure TSeparator -background $var(gray-300)
     }
@@ -473,6 +578,106 @@ oo::class create ::spectrum::Theme {
                 -darkcolor  [list \
                     disabled           $var(disabled-content-color) \
                     {active !disabled} $thumb_hover]
+        }
+    }
+
+    method RefreshCheckbutton {} {
+        namespace upvar ::spectrum var var
+
+        # Build / refresh the per-state photos. Stable names mean the element
+        # picks up redraws (e.g. on dark-mode toggle) automatically.
+        set states {
+            default {}
+            hov     {hover}
+            dis     {disabled}
+            sel     {selected}
+            selhov  {selected hover}
+            seldis  {selected disabled}
+            alt     {alternate}
+            althov  {alternate hover}
+            altdis  {alternate disabled}
+        }
+        foreach {key state} $states {
+            ::spectrum::priv::set_image ::spectrum::priv::cb_$key \
+                [::spectrum::priv::checkbox_svg $state]
+        }
+
+        ttk::style theme settings spectrum {
+            if {"Spectrum.Checkbutton.indicator" ni [ttk::style element names]} {
+                ttk::style element create Spectrum.Checkbutton.indicator image [list \
+                    ::spectrum::priv::cb_default \
+                    {alternate disabled} ::spectrum::priv::cb_altdis \
+                    {alternate hover}    ::spectrum::priv::cb_althov \
+                    alternate            ::spectrum::priv::cb_alt \
+                    {selected disabled}  ::spectrum::priv::cb_seldis \
+                    {selected hover}     ::spectrum::priv::cb_selhov \
+                    selected             ::spectrum::priv::cb_sel \
+                    disabled             ::spectrum::priv::cb_dis \
+                    hover                ::spectrum::priv::cb_hov] \
+                    -sticky w -padding [list 0 0 6 0]
+            }
+            ttk::style layout TCheckbutton {
+                Checkbutton.padding -sticky nswe -children {
+                    Spectrum.Checkbutton.indicator -side left -sticky {}
+                    Checkbutton.focus -side left -sticky w -children {
+                        Checkbutton.label -sticky nswe
+                    }
+                }
+            }
+            ttk::style configure TCheckbutton \
+                -background $var(gray-100) \
+                -foreground $var(body-color) \
+                -font $var(component-m-regular) \
+                -padding [list 0 $var(spacing-100)]
+            ttk::style map TCheckbutton \
+                -background [list disabled $var(gray-100)] \
+                -foreground [list disabled $var(disabled-content-color)]
+        }
+    }
+
+    method RefreshRadiobutton {} {
+        namespace upvar ::spectrum var var
+
+        set states {
+            default {}
+            hov     {hover}
+            dis     {disabled}
+            sel     {selected}
+            selhov  {selected hover}
+            seldis  {selected disabled}
+        }
+        foreach {key state} $states {
+            ::spectrum::priv::set_image ::spectrum::priv::rb_$key \
+                [::spectrum::priv::radio_svg $state]
+        }
+
+        ttk::style theme settings spectrum {
+            if {"Spectrum.Radiobutton.indicator" ni [ttk::style element names]} {
+                ttk::style element create Spectrum.Radiobutton.indicator image [list \
+                    ::spectrum::priv::rb_default \
+                    {selected disabled}  ::spectrum::priv::rb_seldis \
+                    {selected hover}     ::spectrum::priv::rb_selhov \
+                    selected             ::spectrum::priv::rb_sel \
+                    disabled             ::spectrum::priv::rb_dis \
+                    hover                ::spectrum::priv::rb_hov] \
+                    -sticky w -padding [list 0 0 6 0]
+            }
+            ttk::style layout TRadiobutton {
+                Radiobutton.padding -sticky nswe -children {
+                    Spectrum.Radiobutton.indicator -side left -sticky {}
+                    Radiobutton.focus -side left -sticky w -children {
+                        Radiobutton.label -sticky nswe
+                    }
+                }
+            }
+            ttk::style configure TRadiobutton \
+                -background $var(gray-100) \
+                -foreground $var(body-color) \
+                -font $var(component-m-regular) \
+                -padding [list 0 $var(spacing-100)]
+            ttk::style map TRadiobutton \
+                -background [list disabled $var(gray-100)] \
+                -foreground [list disabled $var(disabled-content-color)]
         }
     }
 

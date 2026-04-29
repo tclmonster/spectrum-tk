@@ -43,8 +43,9 @@ Every standard Tk widget should look like Spectrum without the application doing
 
 Scrollbars deliberately diverge from Spectrum 2 web specs and instead follow the host platform's native look (with arrow buttons): a Windows-style thumb on Windows, a slimmer thumb on macOS, and the clam default on Linux. Spectrum tokens still drive the colors. This is intentional — users are familiar with their platform's scrollbar muscle memory.
 
-- **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TScrollbar, TSeparator.
-- **ttk classes — pending:** TCheckbutton, TRadiobutton, TPanedwindow, TSizegrip, Treeview.
+- **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TCheckbutton, TRadiobutton, TScrollbar, TSeparator.
+- **ttk classes — pending:** TPanedwindow, TSizegrip, Treeview.
+- **Image elements — implemented:** `Spectrum.Checkbutton.indicator`, `Spectrum.Radiobutton.indicator` (built from SVG strings, support normal/hover/disabled and selected/alternate combinations, recolor on dark-mode toggle without re-creating elements).
 - **Classic widgets** (configured via the option database in `refreshOptions`): partial — Text and Menu are configured today. Pending: Toplevel, Frame, Label, Button, Checkbutton, Radiobutton, Entry, Listbox, Scrollbar, Scale, Spinbox, Menubutton, Message, Canvas.
 - **Image elements** will be used where solid fills can't reach Spectrum fidelity (e.g. checkbox/radio indicators, switch track, scrollbar thumb shape, focus ring). They are produced from inline SVG via `::spectrum::priv::svg_image`, which caches by content + DPI scaling.
 
