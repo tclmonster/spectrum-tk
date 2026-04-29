@@ -57,11 +57,13 @@ The command form is the idiomatic Tk style and composes directly with `pack`/`gr
 
 | Surface | Status |
 | --- | --- |
-| Theme foundation: ttk styling for TButton (default/Primary/Accent), TLabel, TFrame, TLabelframe, TEntry, TScrollbar, TSeparator | Implemented |
-| Theme foundation: remaining ttk classes (TCheckbutton, TRadiobutton, TCombobox, TSpinbox, TMenubutton, TNotebook, TPanedwindow, TProgressbar, TScale, TSizegrip, Treeview) | Pending |
-| Theme foundation: classic widget option database (full coverage) | In progress (Text, Menu done) |
+| Theme foundation: ttk styling for TButton (default/Primary/Accent), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TScrollbar, TSeparator | Implemented |
+| Theme foundation: remaining ttk classes (TCheckbutton, TRadiobutton, TPanedwindow, TSizegrip, Treeview) | Pending |
+| Theme foundation: classic widget option database (full coverage) | In progress (Text, Menu, Combobox listbox done) |
 | SVG photo factory (`::spectrum::priv::svg_image`) | Implemented |
 | Concrete `spectrum::*` components | Planned |
+
+Scrollbars use a native-look style per platform — they keep arrow buttons and follow Windows / macOS / Linux conventions for thumb shape, while still pulling colors from Spectrum tokens.
 
 This table is updated as work lands.
 

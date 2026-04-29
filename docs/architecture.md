@@ -41,8 +41,10 @@ The design system is the source of truth. Component names, variants, prop names,
 
 Every standard Tk widget should look like Spectrum without the application doing anything beyond `package require spectrum; spectrum::theme use`. This is implemented in `spectrum.tcl` via the `::spectrum::Theme` class, which subclasses `clam` and re-skins each widget class on theme activation.
 
-- **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TScrollbar, TSeparator.
-- **ttk classes — pending:** TCheckbutton, TRadiobutton, TCombobox, TSpinbox, TMenubutton, TNotebook, TPanedwindow, TProgressbar, TScale, TSizegrip, Treeview.
+Scrollbars deliberately diverge from Spectrum 2 web specs and instead follow the host platform's native look (with arrow buttons): a Windows-style thumb on Windows, a slimmer thumb on macOS, and the clam default on Linux. Spectrum tokens still drive the colors. This is intentional — users are familiar with their platform's scrollbar muscle memory.
+
+- **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TScrollbar, TSeparator.
+- **ttk classes — pending:** TCheckbutton, TRadiobutton, TPanedwindow, TSizegrip, Treeview.
 - **Classic widgets** (configured via the option database in `refreshOptions`): partial — Text and Menu are configured today. Pending: Toplevel, Frame, Label, Button, Checkbutton, Radiobutton, Entry, Listbox, Scrollbar, Scale, Spinbox, Menubutton, Message, Canvas.
 - **Image elements** will be used where solid fills can't reach Spectrum fidelity (e.g. checkbox/radio indicators, switch track, scrollbar thumb shape, focus ring). They are produced from inline SVG via `::spectrum::priv::svg_image`, which caches by content + DPI scaling.
 

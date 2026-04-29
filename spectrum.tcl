@@ -219,6 +219,12 @@ oo::class create ::spectrum::Theme {
         my RefreshFrame
         my RefreshLabelframe
         my RefreshEntry
+        my RefreshCombobox
+        my RefreshSpinbox
+        my RefreshMenubutton
+        my RefreshNotebook
+        my RefreshProgressbar
+        my RefreshScale
 
         ttk::style configure TSeparator -background $var(gray-300)
     }
@@ -294,31 +300,221 @@ oo::class create ::spectrum::Theme {
         }
     }
 
-    method RefreshScrollbar {} {
+    method RefreshCombobox {} {
+        namespace upvar ::spectrum var var
+        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
+        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        set focus_color  $var(focus-indicator-color)
+        ttk::style theme settings spectrum {
+            ttk::style configure TCombobox \
+                -fieldbackground $var(gray-50) \
+                -background $var(gray-50) \
+                -foreground $var(body-color) \
+                -arrowcolor $var(body-color) \
+                -insertcolor $var(body-color) \
+                -bordercolor $border \
+                -lightcolor $border \
+                -darkcolor $border \
+                -borderwidth 1 \
+                -padding [list $var(spacing-200) $var(spacing-100)] \
+                -font $var(component-m-regular)
+            ttk::style map TCombobox \
+                -fieldbackground [list disabled $var(disabled-background-color)] \
+                -foreground      [list disabled $var(disabled-content-color)] \
+                -arrowcolor      [list disabled $var(disabled-content-color)] \
+                -bordercolor     [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -lightcolor      [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -darkcolor       [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover]
+        }
+        # The combobox popup is a tk::listbox configured via the option db.
+        option add *TCombobox*Listbox.background       $var(gray-50)        widgetDefault
+        option add *TCombobox*Listbox.foreground       $var(body-color)     widgetDefault
+        option add *TCombobox*Listbox.selectBackground $var(neutral-background-color-selected-default) widgetDefault
+        option add *TCombobox*Listbox.selectForeground $var(white)          widgetDefault
+        option add *TCombobox*Listbox.borderWidth      0                    widgetDefault
+        option add *TCombobox*Listbox.font             $var(component-m-regular) widgetDefault
+    }
+
+    method RefreshSpinbox {} {
+        namespace upvar ::spectrum var var
+        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
+        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        set focus_color  $var(focus-indicator-color)
+        ttk::style theme settings spectrum {
+            ttk::style configure TSpinbox \
+                -fieldbackground $var(gray-50) \
+                -background $var(gray-50) \
+                -foreground $var(body-color) \
+                -arrowcolor $var(body-color) \
+                -insertcolor $var(body-color) \
+                -bordercolor $border \
+                -lightcolor $border \
+                -darkcolor $border \
+                -borderwidth 1 \
+                -padding [list $var(spacing-200) $var(spacing-100)] \
+                -font $var(component-m-regular)
+            ttk::style map TSpinbox \
+                -fieldbackground [list disabled $var(disabled-background-color)] \
+                -foreground      [list disabled $var(disabled-content-color)] \
+                -arrowcolor      [list disabled $var(disabled-content-color)] \
+                -bordercolor     [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -lightcolor      [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -darkcolor       [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover]
+        }
+    }
+
+    method RefreshMenubutton {} {
         namespace upvar ::spectrum var var
         ttk::style theme settings spectrum {
-            ttk::style layout Vertical.TScrollbar {
-                Vertical.Scrollbar.trough -sticky ns -children {
-                    Vertical.Scrollbar.thumb -sticky nswe
-                }
-            }
-            ttk::style layout Horizontal.TScrollbar {
-                Horizontal.Scrollbar.trough -sticky we -children {
-                    Horizontal.Scrollbar.thumb -sticky nswe
-                }
-            }
-            set arrowsize [font measure $var(component-m-regular) "M"]
-            set scrollbar_bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
-            set thumb_bg $scrollbar_bg
-            ttk::style configure TScrollbar -arrowsize $arrowsize \
-                -gripcount 0 -borderwidth 0 -lightcolor $thumb_bg -darkcolor $thumb_bg \
-                -background $scrollbar_bg
+            ttk::style configure TMenubutton \
+                -background $var(gray-300) \
+                -foreground $var(neutral-content-color-default) \
+                -arrowcolor $var(body-color) \
+                -bordercolor $var(gray-300) \
+                -lightcolor  $var(gray-300) \
+                -darkcolor   $var(gray-300) \
+                -padding [list $var(spacing-200) $var(spacing-100)] \
+                -relief flat \
+                -font $var(component-m-regular)
+            ttk::style map TMenubutton \
+                -background [list \
+                    disabled           $var(disabled-background-color) \
+                    {hover !disabled}  $var(gray-400) \
+                    {pressed !disabled} $var(gray-400)] \
+                -foreground [list disabled $var(disabled-content-color)] \
+                -arrowcolor [list disabled $var(disabled-content-color)]
+        }
+    }
 
-            set scrollbar_active_bg [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+    method RefreshNotebook {} {
+        namespace upvar ::spectrum var var
+        set tab_bg      $var(gray-100)
+        set tab_active  [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
+        set tab_focus   $var(gray-50)
+        ttk::style theme settings spectrum {
+            ttk::style configure TNotebook \
+                -background $var(gray-100) \
+                -borderwidth 0 \
+                -tabmargins [list 0 0 0 0]
+            ttk::style configure TNotebook.Tab \
+                -background $tab_bg \
+                -foreground $var(body-color) \
+                -bordercolor $var(gray-300) \
+                -lightcolor  $var(gray-300) \
+                -darkcolor   $var(gray-300) \
+                -padding [list $var(spacing-300) $var(spacing-100)] \
+                -font $var(component-m-regular)
+            ttk::style map TNotebook.Tab \
+                -background [list \
+                    disabled            $var(disabled-background-color) \
+                    selected            $tab_focus \
+                    {hover !selected}   $tab_active] \
+                -foreground [list \
+                    disabled            $var(disabled-content-color) \
+                    selected            $var(accent-content-color-default)]
+        }
+    }
+
+    method RefreshProgressbar {} {
+        namespace upvar ::spectrum var var
+        ttk::style theme settings spectrum {
+            ttk::style configure TProgressbar \
+                -troughcolor $var(gray-300) \
+                -background  $var(accent-background-color-default) \
+                -bordercolor $var(gray-300) \
+                -lightcolor  $var(accent-background-color-default) \
+                -darkcolor   $var(accent-background-color-default) \
+                -borderwidth 0 \
+                -thickness   [::spectrum::scale_pixel 6]
+            ttk::style map TProgressbar \
+                -background [list disabled $var(disabled-content-color)] \
+                -lightcolor [list disabled $var(disabled-content-color)] \
+                -darkcolor  [list disabled $var(disabled-content-color)]
+        }
+    }
+
+    method RefreshScale {} {
+        namespace upvar ::spectrum var var
+        set thumb        [expr {$var(darkmode) ? $var(gray-700) : $var(gray-800)}]
+        set thumb_hover  [expr {$var(darkmode) ? $var(gray-800) : $var(gray-900)}]
+        ttk::style theme settings spectrum {
+            ttk::style configure TScale \
+                -troughcolor $var(gray-300) \
+                -background  $thumb \
+                -bordercolor $thumb \
+                -lightcolor  $thumb \
+                -darkcolor   $thumb \
+                -borderwidth 0
+            ttk::style map TScale \
+                -background [list \
+                    disabled           $var(disabled-content-color) \
+                    {active !disabled} $thumb_hover] \
+                -lightcolor [list \
+                    disabled           $var(disabled-content-color) \
+                    {active !disabled} $thumb_hover] \
+                -darkcolor  [list \
+                    disabled           $var(disabled-content-color) \
+                    {active !disabled} $thumb_hover]
+        }
+    }
+
+    method RefreshScrollbar {} {
+        namespace upvar ::spectrum var var
+
+        # Native-feeling scrollbars: keep clam's default layout (which
+        # includes uparrow/downarrow elements) and only adjust dimensions
+        # and colors per platform.
+        set base_em [font measure $var(component-m-regular) "M"]
+        switch -- [tk windowingsystem] {
+            aqua    { set arrowsize [expr {int($base_em * 0.85)}] }
+            win32   { set arrowsize $base_em }
+            default { set arrowsize $base_em }
+        }
+
+        set scrollbar_bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
+        set scrollbar_active_bg [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+
+        ttk::style theme settings spectrum {
+            ttk::style configure TScrollbar \
+                -arrowsize $arrowsize \
+                -gripcount 0 \
+                -borderwidth 0 \
+                -troughcolor $var(gray-200) \
+                -background $scrollbar_bg \
+                -lightcolor $scrollbar_bg \
+                -darkcolor  $scrollbar_bg \
+                -arrowcolor $var(body-color)
             ttk::style map TScrollbar \
-                -lightcolor [list disabled $var(gray-75) {active !disabled} $scrollbar_active_bg] \
-                -darkcolor  [list disabled $var(gray-75) {active !disabled} $scrollbar_active_bg] \
-                -background [list disabled $var(disabled-background-color) {active !disabled} $scrollbar_active_bg]
+                -background [list \
+                    disabled            $var(disabled-background-color) \
+                    {active !disabled}  $scrollbar_active_bg] \
+                -lightcolor [list \
+                    disabled            $var(gray-200) \
+                    {active !disabled}  $scrollbar_active_bg] \
+                -darkcolor  [list \
+                    disabled            $var(gray-200) \
+                    {active !disabled}  $scrollbar_active_bg] \
+                -arrowcolor [list \
+                    disabled            $var(disabled-content-color) \
+                    {active !disabled}  $var(body-color)]
         }
     }
 
