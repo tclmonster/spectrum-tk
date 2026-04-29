@@ -1,0 +1,439 @@
+'\"
+'\" Copyright (c) 2025 Jan Nijtmans.
+'\"
+'\" See the file "license.terms" for information on usage and redistribution
+'\" of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+'\"
+.TH build-info n 9.0 Tcl "Tcl Built-In Commands"
+.\" The -*- nroff -*- definitions below are for supplemental macros used
+.\" in Tcl/Tk manual entries.
+.\"
+.\" .AP type name in/out ?indent?
+.\"	Start paragraph describing an argument to a library procedure.
+.\"	type is type of argument (int, etc.), in/out is either "in", "out",
+.\"	or "in/out" to describe whether procedure reads or modifies arg,
+.\"	and indent is equivalent to second arg of .IP (shouldn't ever be
+.\"	needed;  use .AS below instead)
+.\"
+.\" .AS ?type? ?name?
+.\"	Give maximum sizes of arguments for setting tab stops.  Type and
+.\"	name are examples of largest possible arguments that will be passed
+.\"	to .AP later.  If args are omitted, default tab stops are used.
+.\"
+.\" .BS
+.\"	Start box enclosure.  From here until next .BE, everything will be
+.\"	enclosed in one large box.
+.\"
+.\" .BE
+.\"	End of box enclosure.
+.\"
+.\" .CS
+.\"	Begin code excerpt.
+.\"
+.\" .CE
+.\"	End code excerpt.
+.\"
+.\" .VS ?version? ?br?
+.\"	Begin vertical sidebar, for use in marking newly-changed parts
+.\"	of man pages.  The first argument is ignored and used for recording
+.\"	the version when the .VS was added, so that the sidebars can be
+.\"	found and removed when they reach a certain age.  If another argument
+.\"	is present, then a line break is forced before starting the sidebar.
+.\"
+.\" .VE
+.\"	End of vertical sidebar.
+.\"
+.\" .DS
+.\"	Begin an indented unfilled display.
+.\"
+.\" .DE
+.\"	End of indented unfilled display.
+.\"
+.\" .SO ?manpage?
+.\"	Start of list of standard options for a Tk widget. The manpage
+.\"	argument defines where to look up the standard options; if
+.\"	omitted, defaults to "options". The options follow on successive
+.\"	lines, in three columns separated by tabs.
+.\"
+.\" .SE
+.\"	End of list of standard options for a Tk widget.
+.\"
+.\" .OP cmdName dbName dbClass
+.\"	Start of description of a specific option.  cmdName gives the
+.\"	option's name as specified in the class command, dbName gives
+.\"	the option's name in the option database, and dbClass gives
+.\"	the option's class in the option database.
+.\"
+.\" .UL arg1 arg2
+.\"	Print arg1 underlined, then print arg2 normally.
+.\"
+.\" .QW arg1 ?arg2?
+.\"	Print arg1 in quotes, then arg2 normally (for trailing punctuation).
+.\"
+.\" .PQ arg1 ?arg2?
+.\"	Print an open parenthesis, arg1 in quotes, then arg2 normally
+.\"	(for trailing punctuation) and then a closing parenthesis.
+.\"
+.\"	# Set up traps and other miscellaneous stuff for Tcl/Tk man pages.
+.if t .wh -1.3i ^B
+.nr ^l \n(.l
+.ad b
+.\"	# Start an argument description
+.de AP
+.ie !"\\$4"" .TP \\$4
+.el \{\
+.   ie !"\\$2"" .TP \\n()Cu
+.   el          .TP 15
+.\}
+.ta \\n()Au \\n()Bu
+.ie !"\\$3"" \{\
+\&\\$1 \\fI\\$2\\fP (\\$3)
+.\".b
+.\}
+.el \{\
+.br
+.ie !"\\$2"" \{\
+\&\\$1	\\fI\\$2\\fP
+.\}
+.el \{\
+\&\\fI\\$1\\fP
+.\}
+.\}
+..
+.\"	# define tabbing values for .AP
+.de AS
+.nr )A 10n
+.if !"\\$1"" .nr )A \\w'\\$1'u+3n
+.nr )B \\n()Au+15n
+.\"
+.if !"\\$2"" .nr )B \\w'\\$2'u+\\n()Au+3n
+.nr )C \\n()Bu+\\w'(in/out)'u+2n
+..
+.AS Tcl_Interp Tcl_CreateInterp in/out
+.\"	# BS - start boxed text
+.\"	# ^y = starting y location
+.\"	# ^b = 1
+.de BS
+.br
+.mk ^y
+.nr ^b 1u
+.if n .nf
+.if n .ti 0
+.if n \l'\\n(.lu\(ul'
+.if n .fi
+..
+.\"	# BE - end boxed text (draw box now)
+.de BE
+.nf
+.ti 0
+.mk ^t
+.ie n \l'\\n(^lu\(ul'
+.el \{\
+.\"	Draw four-sided box normally, but don't draw top of
+.\"	box if the box started on an earlier page.
+.ie !\\n(^b-1 \{\
+\h'-1.5n'\L'|\\n(^yu-1v'\l'\\n(^lu+3n\(ul'\L'\\n(^tu+1v-\\n(^yu'\l'|0u-1.5n\(ul'
+.\}
+.el \}\
+\h'-1.5n'\L'|\\n(^yu-1v'\h'\\n(^lu+3n'\L'\\n(^tu+1v-\\n(^yu'\l'|0u-1.5n\(ul'
+.\}
+.\}
+.fi
+.br
+.nr ^b 0
+..
+.\"	# VS - start vertical sidebar
+.\"	# ^Y = starting y location
+.\"	# ^v = 1 (for troff;  for nroff this doesn't matter)
+.de VS
+.if !"\\$2"" .br
+.mk ^Y
+.ie n 'mc \s12\(br\s0
+.el .nr ^v 1u
+..
+.\"	# VE - end of vertical sidebar
+.de VE
+.ie n 'mc
+.el \{\
+.ev 2
+.nf
+.ti 0
+.mk ^t
+\h'|\\n(^lu+3n'\L'|\\n(^Yu-1v\(bv'\v'\\n(^tu+1v-\\n(^Yu'\h'-|\\n(^lu+3n'
+.sp -1
+.fi
+.ev
+.\}
+.nr ^v 0
+..
+.\"	# Special macro to handle page bottom:  finish off current
+.\"	# box/sidebar if in box/sidebar mode, then invoked standard
+.\"	# page bottom macro.
+.de ^B
+.ev 2
+'ti 0
+'nf
+.mk ^t
+.if \\n(^b \{\
+.\"	Draw three-sided box if this is the box's first page,
+.\"	draw two sides but no top otherwise.
+.ie !\\n(^b-1 \h'-1.5n'\L'|\\n(^yu-1v'\l'\\n(^lu+3n\(ul'\L'\\n(^tu+1v-\\n(^yu'\h'|0u'\c
+.el \h'-1.5n'\L'|\\n(^yu-1v'\h'\\n(^lu+3n'\L'\\n(^tu+1v-\\n(^yu'\h'|0u'\c
+.\}
+.if \\n(^v \{\
+.nr ^x \\n(^tu+1v-\\n(^Yu
+\kx\h'-\\nxu'\h'|\\n(^lu+3n'\ky\L'-\\n(^xu'\v'\\n(^xu'\h'|0u'\c
+.\}
+.bp
+'fi
+.ev
+.if \\n(^b \{\
+.mk ^y
+.nr ^b 2
+.\}
+.if \\n(^v \{\
+.mk ^Y
+.\}
+..
+.\"	# DS - begin display
+.de DS
+.RS
+.nf
+.sp
+..
+.\"	# DE - end display
+.de DE
+.fi
+.RE
+.sp
+..
+.\"	# SO - start of list of standard options
+.de SO
+'ie '\\$1'' .ds So \\fBoptions\\fR
+'el .ds So \\fB\\$1\\fR
+.SH "STANDARD OPTIONS"
+.LP
+.nf
+.ta 5.5c 11c
+.ft B
+..
+.\"	# SE - end of list of standard options
+.de SE
+.fi
+.ft R
+.LP
+See the \\*(So manual entry for details on the standard options.
+..
+.\"	# OP - start of full description for a single option
+.de OP
+.LP
+.nf
+.ta 4c
+Command-Line Name:	\\fB\\$1\\fR
+Database Name:	\\fB\\$2\\fR
+Database Class:	\\fB\\$3\\fR
+.fi
+.IP
+..
+.\"	# CS - begin code excerpt
+.de CS
+.RS
+.nf
+.ta .25i .5i .75i 1i
+..
+.\"	# CE - end code excerpt
+.de CE
+.fi
+.RE
+..
+.\"	# UL - underline word
+.de UL
+\\$1\l'|0\(ul'\\$2
+..
+.\"	# QW - apply quotation marks to word
+.de QW
+.ie '\\*(lq'"' ``\\$1''\\$2
+.\"" fix emacs highlighting
+.el \\*(lq\\$1\\*(rq\\$2
+..
+.\"	# PQ - apply parens and quotation marks to word
+.de PQ
+.ie '\\*(lq'"' (``\\$1''\\$2)\\$3
+.\"" fix emacs highlighting
+.el (\\*(lq\\$1\\*(rq\\$2)\\$3
+..
+.\"	# QR - quoted range
+.de QR
+.ie '\\*(lq'"' ``\\$1''\\-``\\$2''\\$3
+.\"" fix emacs highlighting
+.el \\*(lq\\$1\\*(rq\\-\\*(lq\\$2\\*(rq\\$3
+..
+.\"	# MT - "empty" string
+.de MT
+.QW ""
+..
+.BS
+'\" Note:  do not modify the .SH NAME line immediately below!
+.SH NAME
+buildinfo \- Build info
+.SH SYNOPSIS
+\fB::tcl::build-info\fR ?\fIfield\fR?
+.BE
+.SH DESCRIPTION
+.PP
+This command provides a way to retrieve information about how Tcl was built.
+Without any options, the command returns the Tcl patchlevel, followed
+by the '+'-sign, followed by the fossil commit-id followed by a list of
+dot-separated tags. If a \fIfield\fR is given, this command extracts that
+field as described below. Any other \fIfield\fR value not mentioned
+below will always return "0". For official Tcl releases, the \fIfield\fRs are:
+.\" METHOD: clang
+.TP
+\fB::tcl::build-info clang\fR
+.
+Returns the clang version number (as 4 digits) if Tcl is compiled with clang, 0 otherwise.
+.\" METHOD: commit
+.TP
+\fB::tcl::build-info commit\fR
+.
+Returns the fossil commit-id where Tcl was built from.
+.\" METHOD: compiledebug
+.TP
+\fB::tcl::build-info compiledebug\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_COMPILE_DEBUG\fR, 0 otherwise.
+.\" METHOD: compiler
+.TP
+\fB::tcl::build-info compiler\fR
+.
+Returns the compiler name (either clang, gcc, icc or msvc), followed by a dash and a (4-digit) version number.
+.\" METHOD: compilestats
+.TP
+\fB::tcl::build-info compilestats\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_COMPILE_STATS\fR, 0 otherwise.
+.\" METHOD: cplusplus
+.TP
+\fB::tcl::build-info cplusplus\fR
+.
+Returns 1 if Tcl is compiled with a C++ compiler, 0 otherwise.
+.\" METHOD: debug
+.TP
+\fB::tcl::build-info debug\fR
+.
+Returns 1 if Tcl is not compiled with \fB\-DNDEBUG\fR, 0 otherwise.
+.\" METHOD: gcc
+.TP
+\fB::tcl::build-info gcc\fR
+.
+Returns the gcc version number (as 4 digits) if Tcl is compiled with gcc, 0 otherwise.
+.\" METHOD: icc
+.TP
+\fB::tcl::build-info icc\fR
+.
+Returns the icc version number (as 4 digits) if Tcl is compiled with icc, 0 otherwise.
+.\" METHOD: ilp32
+.TP
+\fB::tcl::build-info ilp32\fR
+.
+Returns 1 if Tcl is compiled such that integers, longs and pointers are all 32-bit, 0 otherwise.
+.\" METHOD: memdebug
+.TP
+\fB::tcl::build-info memdebug\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_MEM_DEBUG\fR, 0 otherwise.
+.\" METHOD: msvc
+.TP
+\fB::tcl::build-info msvc\fR
+.
+Returns the msvc version number (as 4 digits) if Tcl is compiled with msvc, 0 otherwise.
+.\" METHOD: nmake
+.TP
+\fB::tcl::build-info nmake\fR
+.
+Returns 1 if Tcl is built using nmake, 0 otherwise.
+.\" METHOD: no-deprecate
+.TP
+\fB::tcl::build-info no-deprecate\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_NO_DEPRECATED\fR, 0 otherwise.
+.\" METHOD: no-thread
+.TP
+\fB::tcl::build-info no-thread\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_THREADS=0\fR, 0 otherwise.
+.\" METHOD: no-optimize
+.TP
+\fB::tcl::build-info no-optimize\fR
+.
+Returns 1 if Tcl is not compiled with \fB\-DTCL_CFG_OPTIMIZED\fR, 0 otherwise.
+.\" METHOD: objective-c
+.TP
+\fB::tcl::build-info objective-c\fR
+.
+Returns 1 if Tcl is compiled with an objective-c compiler, 0 otherwise.
+.\" METHOD: objective-cplusplus
+.TP
+\fB::tcl::build-info objective-cplusplus\fR
+.
+Returns 1 if Tcl is compiled with an objective-c++ compiler, 0 otherwise.
+.\" METHOD: patchlevel
+.TP
+\fB::tcl::build-info patchlevel\fR
+.
+Returns the Tcl patchlevel, same as \fBinfo patchlevel\fR.
+.\" METHOD: profile
+.TP
+\fB::tcl::build-info profile\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DTCL_CFG_PROFILED\fR, 0 otherwise.
+.\" METHOD: purify
+.TP
+\fB::tcl::build-info purify\fR
+.
+Returns 1 if Tcl is compiled with \fB\-DPURIFY\fR, 0 otherwise.
+.\" METHOD: static
+.TP
+\fB::tcl::build-info static\fR
+.
+Returns 1 if Tcl is compiled as a static library, 0 otherwise.
+.\" METHOD: tommath
+.TP
+\fB::tcl::build-info tommath\fR
+.
+Returns the libtommath version number (as 4 digits) if libtommath is built into Tcl, 0 otherwise.
+.\" METHOD: version
+.TP
+\fB::tcl::build-info version\fR
+.
+Returns the Tcl version, same as \fBinfo tclversion\fR.
+.\" METHOD: zlib
+.TP
+\fB::tcl::build-info zlib\fR
+.
+Returns the zlib version number (as 4 digits) if zlib is built into Tcl, 0 otherwise.
+.SH "EXAMPLES"
+.PP
+These show the use of \fB::tcl::build-info\fR.
+.PP
+.CS
+\fB::tcl::build-info\fR
+     \fI\(-> 9.0.2+af16c07b81655fabde8028374161ad54b84ef9956843c63f49976b4ef601b611.gcc-1204\fR
+\fB::tcl::build-info commit\fR
+     \fI\(-> af16c07b81655fabde8028374161ad54b84ef9956843c63f49976b4ef601b611\fR
+\fB::tcl::build-info compiler\fR
+     \fI\(-> gcc-1204\fR
+\fB::tcl::build-info gcc\fR
+     \fI\(-> 1204\fR
+\fB::tcl::build-info version\fR
+     \fI\(-> 9.0\fR
+\fB::tcl::build-info patchlevel\fR
+     \fI\(-> 9.0.2\fR
+.CE
+.SH "SEE ALSO"
+info(n)
+.SH "KEYWORDS"
+build-info
+'\" Local Variables:
+'\" mode: nroff
+'\" End:
