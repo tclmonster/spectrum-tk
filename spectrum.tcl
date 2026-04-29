@@ -96,6 +96,24 @@ proc ::spectrum::scale_pixel {pixel} {
     return [expr {int([tk scaling] * $pixel * 72.0/96.0)}] ;# CSS pixel is 1/96.0 inch
 }
 
+namespace eval ::spectrum::priv {
+    variable svg_cache
+    array set svg_cache {}
+}
+
+# Rasterize an SVG string to a Tk photo image, caching by content + DPI scaling.
+# Repeated calls with identical $svg_data return the same image name.
+proc ::spectrum::priv::svg_image {svg_data} {
+    variable svg_cache
+    set key [list $::tk::scalingPct $svg_data]
+    if {[info exists svg_cache($key)]} {
+        return $svg_cache($key)
+    }
+    set img [image create photo -format $::tk::svgFmt -data $svg_data]
+    set svg_cache($key) $img
+    return $img
+}
+
 
 source [file join [file dirname [info script]] spectrum-vars.tcl]
 
@@ -164,7 +182,11 @@ oo::class create ::spectrum::Theme {
             bind [winfo class .] <Map> $cmd
             bind Toplevel <Map> $cmd
 
-            {*}[string map {%W .} $cmd]
+            # Apply to the existing root toplevel only once it is mapped — the
+            # dwmapi call needs a realized HWND.
+            if {[winfo ismapped .]} {
+                {*}[string map {%W .} $cmd]
+            }
         }
     }
 
@@ -193,8 +215,83 @@ oo::class create ::spectrum::Theme {
 
         my RefreshScrollbar
         my RefreshButton
+        my RefreshLabel
+        my RefreshFrame
+        my RefreshLabelframe
+        my RefreshEntry
 
         ttk::style configure TSeparator -background $var(gray-300)
+    }
+
+    method RefreshLabel {} {
+        namespace upvar ::spectrum var var
+        ttk::style theme settings spectrum {
+            ttk::style configure TLabel \
+                -background $var(gray-100) \
+                -foreground $var(body-color) \
+                -font $var(component-m-regular)
+            ttk::style map TLabel \
+                -foreground [list disabled $var(disabled-content-color)]
+        }
+    }
+
+    method RefreshFrame {} {
+        namespace upvar ::spectrum var var
+        ttk::style theme settings spectrum {
+            ttk::style configure TFrame -background $var(gray-100) -borderwidth 0
+        }
+    }
+
+    method RefreshLabelframe {} {
+        namespace upvar ::spectrum var var
+        set border [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        ttk::style theme settings spectrum {
+            ttk::style configure TLabelframe \
+                -background $var(gray-100) \
+                -bordercolor $border \
+                -lightcolor $border \
+                -darkcolor $border \
+                -borderwidth 1 \
+                -relief solid
+            ttk::style configure TLabelframe.Label \
+                -background $var(gray-100) \
+                -foreground $var(body-color) \
+                -font $var(component-m-regular)
+        }
+    }
+
+    method RefreshEntry {} {
+        namespace upvar ::spectrum var var
+        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
+        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        set focus_color  $var(focus-indicator-color)
+        ttk::style theme settings spectrum {
+            ttk::style configure TEntry \
+                -fieldbackground $var(gray-50) \
+                -foreground $var(body-color) \
+                -insertcolor $var(body-color) \
+                -bordercolor $border \
+                -lightcolor $border \
+                -darkcolor $border \
+                -borderwidth 1 \
+                -padding [list $var(spacing-200) $var(spacing-100)] \
+                -font $var(component-m-regular)
+            ttk::style map TEntry \
+                -fieldbackground [list disabled $var(disabled-background-color)] \
+                -foreground      [list disabled $var(disabled-content-color)] \
+                -bordercolor     [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -lightcolor      [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover] \
+                -darkcolor       [list \
+                    disabled            $border \
+                    {focus !disabled}   $focus_color \
+                    {hover !disabled}   $border_hover]
+        }
     }
 
     method RefreshScrollbar {} {
@@ -210,7 +307,7 @@ oo::class create ::spectrum::Theme {
                     Horizontal.Scrollbar.thumb -sticky nswe
                 }
             }
-            set arrowsize [font measure spectrumui "M"]
+            set arrowsize [font measure $var(component-m-regular) "M"]
             set scrollbar_bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
             set thumb_bg $scrollbar_bg
             ttk::style configure TScrollbar -arrowsize $arrowsize \
@@ -300,6 +397,11 @@ oo::class create ::spectrum::Theme {
 
     method use {} {
         ttk::style theme use spectrum
+        # The <<ThemeChanged>> binding on [winfo class .] is not firing reliably;
+        # invoke the refresh methods directly until that is investigated.
+        my refreshBindings
+        my refreshStyles
+        my refreshOptions
     }
 }
 

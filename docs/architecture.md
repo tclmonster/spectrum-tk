@@ -39,11 +39,16 @@ The design system is the source of truth. Component names, variants, prop names,
 
 ### Phase 1 — Theme foundation
 
-Every standard Tk widget should look like Spectrum without the application doing anything beyond `package require spectrum; spectrum::theme use`. This is implemented in `spectrum.tcl` via the `::spectrum::Theme` class, which subclasses `clam` and re-skins each widget class on `<<ThemeChanged>>`.
+Every standard Tk widget should look like Spectrum without the application doing anything beyond `package require spectrum; spectrum::theme use`. This is implemented in `spectrum.tcl` via the `::spectrum::Theme` class, which subclasses `clam` and re-skins each widget class on theme activation.
 
-- **ttk classes covered:** TButton, TCheckbutton, TRadiobutton, TEntry, TCombobox, TSpinbox, TLabel, TLabelframe, TFrame, TMenubutton, TNotebook, TPanedwindow, TProgressbar, TScale, TScrollbar, TSeparator, TSizegrip, Treeview.
-- **Classic widgets** (configured via the option database in `RefreshOptions`): Toplevel, Frame, Label, Button, Checkbutton, Radiobutton, Entry, Text, Listbox, Scrollbar, Scale, Spinbox, Menu, Menubutton, Message, Canvas.
-- **Image elements** are used where solid fills can't reach Spectrum fidelity (e.g. checkbox/radio indicators, switch track, scrollbar thumb shape, focus ring). They are produced from inline SVG via the photo factory.
+- **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TScrollbar, TSeparator.
+- **ttk classes — pending:** TCheckbutton, TRadiobutton, TCombobox, TSpinbox, TMenubutton, TNotebook, TPanedwindow, TProgressbar, TScale, TSizegrip, Treeview.
+- **Classic widgets** (configured via the option database in `refreshOptions`): partial — Text and Menu are configured today. Pending: Toplevel, Frame, Label, Button, Checkbutton, Radiobutton, Entry, Listbox, Scrollbar, Scale, Spinbox, Menubutton, Message, Canvas.
+- **Image elements** will be used where solid fills can't reach Spectrum fidelity (e.g. checkbox/radio indicators, switch track, scrollbar thumb shape, focus ring). They are produced from inline SVG via `::spectrum::priv::svg_image`, which caches by content + DPI scaling.
+
+#### Theme activation
+
+`spectrum::theme use` invokes `refreshBindings`, `refreshStyles`, and `refreshOptions` directly. The `<<ThemeChanged>>` virtual-event binding is also registered (on `[winfo class .]`) but is currently not firing reliably — known issue, deferred. Direct invocation guarantees the styles are applied.
 
 ### Phase 2 — OO infrastructure
 
@@ -121,11 +126,12 @@ Spectrum specifies short transitions (~130ms) for hover/press/focus and continuo
 spectrum-tk/
 ├── spectrum.tcl                # Theme entry point + ::spectrum::Theme class
 ├── spectrum-vars.tcl           # Generated tokens
-├── spectrum-components.tcl     # Generated abstract token classes (Phase 2)
+├── spectrum-components.tcl     # Generated abstract token classes (Phase 2 — planned)
 ├── gen-spectrum-vars.tcl       # Token → vars generator
-├── gen-spectrum-components.tcl # Tokens → abstract classes generator (Phase 2)
+├── gen-spectrum-components.tcl # Tokens → abstract classes generator (Phase 2 — planned)
 ├── pkgIndex.tcl
-├── components/                 # Concrete components (Phase 3)
+├── kitchen-sink.tcl            # Visual test harness — every standard Tk/Ttk widget
+├── components/                 # Concrete components (Phase 3 — planned)
 │   ├── _component.tcl          # ::spectrum::Component base
 │   ├── Button.tcl
 │   ├── Switch.tcl
@@ -134,7 +140,7 @@ spectrum-tk/
 │   ├── architecture.md
 │   ├── user_guide.md
 │   └── test_strategy.md
-└── test/                       # tcltest suites
+└── test/                       # tcltest suites (planned)
 ```
 
 ## Open questions

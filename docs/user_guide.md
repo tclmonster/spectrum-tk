@@ -55,17 +55,25 @@ The command form is the idiomatic Tk style and composes directly with `pack`/`gr
 
 ### Component status
 
-| Spectrum component | Status |
+| Surface | Status |
 | --- | --- |
-| Theme foundation (ttk + classic widgets) | In progress |
-| Button | Planned |
-| Switch | Planned |
-| TextField | Planned |
-| Checkbox | Planned |
-| Tooltip | Planned |
-| _(everything else from the S2 catalog)_ | Planned |
+| Theme foundation: ttk styling for TButton (default/Primary/Accent), TLabel, TFrame, TLabelframe, TEntry, TScrollbar, TSeparator | Implemented |
+| Theme foundation: remaining ttk classes (TCheckbutton, TRadiobutton, TCombobox, TSpinbox, TMenubutton, TNotebook, TPanedwindow, TProgressbar, TScale, TSizegrip, Treeview) | Pending |
+| Theme foundation: classic widget option database (full coverage) | In progress (Text, Menu done) |
+| SVG photo factory (`::spectrum::priv::svg_image`) | Implemented |
+| Concrete `spectrum::*` components | Planned |
 
-This table is updated as components land.
+This table is updated as work lands.
+
+## Visual testing
+
+`kitchen-sink.tcl` at the project root renders one of every standard Tk and Ttk widget, grouped into Buttons / Inputs / Indicators / Selection / Containers / Canvas tabs. Run it with any Tcl/Tk 9.x `wish`:
+
+```sh
+./tclkit-9.0.3-<platform> kitchen-sink.tcl
+```
+
+There's a "Toggle dark mode" button in the header for inspecting both modes without restarting.
 
 ## Customisation
 
