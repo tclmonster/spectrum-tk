@@ -180,6 +180,89 @@ proc ::spectrum::priv::checkbox_svg {state} {
         %PATH%   $path   %OPAC%   $check_opacity] $tpl]
 }
 
+# Generate an SVG string for the scrollbar trough (solid fill).
+proc ::spectrum::priv::scrollbar_track_svg {} {
+    namespace upvar ::spectrum var var
+    set track [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
+    return [string map [list %BG% $track] {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<rect width="16" height="16" fill="%BG%"/>
+</svg>}]
+}
+
+# Generate an SVG string for a Win11-style scrollbar thumb. Designed for
+# 9-slice stretching: the rounded caps sit entirely inside the -border
+# zone, so the middle stretches as a solid color across long thumbs.
+# $orient is "vertical" or "horizontal".
+proc ::spectrum::priv::scrollbar_thumb_svg {orient state} {
+    namespace upvar ::spectrum var var
+    set hover    [expr {"active"   in $state}]
+    set pressed  [expr {"pressed"  in $state}]
+    set disabled [expr {"disabled" in $state}]
+
+    if {$disabled} {
+        set fill $var(disabled-content-color)
+    } elseif {$pressed} {
+        set fill [expr {$var(darkmode) ? $var(gray-800) : $var(gray-700)}]
+    } elseif {$hover} {
+        set fill [expr {$var(darkmode) ? $var(gray-700) : $var(gray-600)}]
+    } else {
+        set fill [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+    }
+
+    # Geometry: 16×16 image with a slim pill.
+    #   Vertical:   pill at x=5, y=2, w=6, h=12, rx=3
+    #               caps occupy y=2..5 and y=11..14; middle solid y=5..11
+    #   Horizontal: rotated equivalent
+    # With -border 5 (DPI-scaled at element-create time), the outer 5px on
+    # the long axis hold the full rounded cap; the middle 6px is uniform
+    # fill that stretches.
+    if {$orient eq "vertical"} {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<rect x="5" y="2" width="6" height="12" rx="3" ry="3" fill="%FILL%"/>
+</svg>}
+    } else {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<rect x="2" y="5" width="12" height="6" rx="3" ry="3" fill="%FILL%"/>
+</svg>}
+    }
+    return [string map [list %FILL% $fill] $tpl]
+}
+
+# Generate an SVG string for a Win11-style scrollbar chevron arrow button.
+# $direction is up/down/left/right.
+proc ::spectrum::priv::scrollbar_arrow_svg {direction state} {
+    namespace upvar ::spectrum var var
+    set hover    [expr {"active"   in $state}]
+    set pressed  [expr {"pressed"  in $state}]
+    set disabled [expr {"disabled" in $state}]
+
+    if {$disabled} {
+        set arrow $var(disabled-content-color)
+        set bg [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
+    } else {
+        set arrow $var(body-color)
+        if {$pressed} {
+            set bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
+        } elseif {$hover} {
+            set bg [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        } else {
+            set bg [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
+        }
+    }
+
+    switch -- $direction {
+        up    { set path "M 4.5 9.5 L 8 6 L 11.5 9.5" }
+        down  { set path "M 4.5 6.5 L 8 10 L 11.5 6.5" }
+        left  { set path "M 9.5 4.5 L 6 8 L 9.5 11.5" }
+        right { set path "M 6.5 4.5 L 10 8 L 6.5 11.5" }
+    }
+
+    return [string map [list %BG% $bg %ARROW% $arrow %PATH% $path] {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<rect width="16" height="16" fill="%BG%"/>
+<path d="%PATH%" stroke="%ARROW%" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>}]
+}
+
 # Generate an SVG string for a Spectrum-styled radio indicator.
 proc ::spectrum::priv::radio_svg {state} {
     namespace upvar ::spectrum var var
@@ -684,42 +767,78 @@ oo::class create ::spectrum::Theme {
     method RefreshScrollbar {} {
         namespace upvar ::spectrum var var
 
-        # Native-feeling scrollbars: keep clam's default layout (which
-        # includes uparrow/downarrow elements) and only adjust dimensions
-        # and colors per platform.
-        set base_em [font measure $var(component-m-regular) "M"]
-        switch -- [tk windowingsystem] {
-            aqua    { set arrowsize [expr {int($base_em * 0.85)}] }
-            win32   { set arrowsize $base_em }
-            default { set arrowsize $base_em }
+        # Build / refresh the per-element, per-state photos. Win11-style
+        # scrollbar is unified across platforms.
+        ::spectrum::priv::set_image ::spectrum::priv::sb_track \
+            [::spectrum::priv::scrollbar_track_svg]
+
+        foreach orient {vertical horizontal} {
+            set short [string index $orient 0]
+            foreach {key state} {default {} hov {active} prs {pressed} dis {disabled}} {
+                ::spectrum::priv::set_image ::spectrum::priv::sb_thumb_${short}_${key} \
+                    [::spectrum::priv::scrollbar_thumb_svg $orient $state]
+            }
         }
 
-        set scrollbar_bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
-        set scrollbar_active_bg [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+        foreach direction {up down left right} {
+            foreach {key state} {default {} hov {active} prs {pressed} dis {disabled}} {
+                ::spectrum::priv::set_image ::spectrum::priv::sb_${direction}_${key} \
+                    [::spectrum::priv::scrollbar_arrow_svg $direction $state]
+            }
+        }
 
         ttk::style theme settings spectrum {
-            ttk::style configure TScrollbar \
-                -arrowsize $arrowsize \
-                -gripcount 0 \
-                -borderwidth 0 \
-                -troughcolor $var(gray-200) \
-                -background $scrollbar_bg \
-                -lightcolor $scrollbar_bg \
-                -darkcolor  $scrollbar_bg \
-                -arrowcolor $var(body-color)
-            ttk::style map TScrollbar \
-                -background [list \
-                    disabled            $var(disabled-background-color) \
-                    {active !disabled}  $scrollbar_active_bg] \
-                -lightcolor [list \
-                    disabled            $var(gray-200) \
-                    {active !disabled}  $scrollbar_active_bg] \
-                -darkcolor  [list \
-                    disabled            $var(gray-200) \
-                    {active !disabled}  $scrollbar_active_bg] \
-                -arrowcolor [list \
-                    disabled            $var(disabled-content-color) \
-                    {active !disabled}  $var(body-color)]
+            if {"Spectrum.Vscroll.trough" ni [ttk::style element names]} {
+                ttk::style element create Spectrum.Vscroll.trough image \
+                    ::spectrum::priv::sb_track -sticky ns
+                ttk::style element create Spectrum.Hscroll.trough image \
+                    ::spectrum::priv::sb_track -sticky we
+
+                # -border is in photo pixels, so scale with DPI to match the
+                # SVG's 9-slice geometry (5px in a 16×16 source image).
+                set b5 [expr {int(round(5 * $::tk::scalingPct / 100.0))}]
+                ttk::style element create Spectrum.Vscroll.thumb image \
+                    [list ::spectrum::priv::sb_thumb_v_default \
+                        disabled ::spectrum::priv::sb_thumb_v_dis \
+                        pressed  ::spectrum::priv::sb_thumb_v_prs \
+                        active   ::spectrum::priv::sb_thumb_v_hov] \
+                    -sticky nswe -border [list $b5 $b5]
+                ttk::style element create Spectrum.Hscroll.thumb image \
+                    [list ::spectrum::priv::sb_thumb_h_default \
+                        disabled ::spectrum::priv::sb_thumb_h_dis \
+                        pressed  ::spectrum::priv::sb_thumb_h_prs \
+                        active   ::spectrum::priv::sb_thumb_h_hov] \
+                    -sticky nswe -border [list $b5 $b5]
+
+                foreach {dir elem} {
+                    up    Spectrum.Vscroll.uparrow
+                    down  Spectrum.Vscroll.downarrow
+                    left  Spectrum.Hscroll.leftarrow
+                    right Spectrum.Hscroll.rightarrow
+                } {
+                    ttk::style element create $elem image \
+                        [list ::spectrum::priv::sb_${dir}_default \
+                            disabled ::spectrum::priv::sb_${dir}_dis \
+                            pressed  ::spectrum::priv::sb_${dir}_prs \
+                            active   ::spectrum::priv::sb_${dir}_hov] \
+                        -sticky {}
+                }
+            }
+
+            ttk::style layout Vertical.TScrollbar {
+                Spectrum.Vscroll.trough -sticky ns -children {
+                    Spectrum.Vscroll.uparrow   -side top    -sticky {}
+                    Spectrum.Vscroll.downarrow -side bottom -sticky {}
+                    Spectrum.Vscroll.thumb     -sticky nswe
+                }
+            }
+            ttk::style layout Horizontal.TScrollbar {
+                Spectrum.Hscroll.trough -sticky we -children {
+                    Spectrum.Hscroll.leftarrow  -side left  -sticky {}
+                    Spectrum.Hscroll.rightarrow -side right -sticky {}
+                    Spectrum.Hscroll.thumb      -sticky nswe
+                }
+            }
         }
     }
 

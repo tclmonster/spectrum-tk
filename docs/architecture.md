@@ -41,11 +41,11 @@ The design system is the source of truth. Component names, variants, prop names,
 
 Every standard Tk widget should look like Spectrum without the application doing anything beyond `package require spectrum; spectrum::theme use`. This is implemented in `spectrum.tcl` via the `::spectrum::Theme` class, which subclasses `clam` and re-skins each widget class on theme activation.
 
-Scrollbars deliberately diverge from Spectrum 2 web specs and instead follow the host platform's native look (with arrow buttons): a Windows-style thumb on Windows, a slimmer thumb on macOS, and the clam default on Linux. Spectrum tokens still drive the colors. This is intentional — users are familiar with their platform's scrollbar muscle memory.
+Scrollbars deliberately diverge from Spectrum 2 web specs and use a unified **Windows 11-style appearance on every platform** — rounded chevron arrow buttons, a slim rounded-pill thumb, 16px width. Every element is drawn from SVG via `::spectrum::priv::svg_image` and the named-photo `set_image` helper, so dark/light mode swaps recolor in place without rebuilding elements. The four custom elements per orientation (`Spectrum.Vscroll.trough`, `.thumb`, `.uparrow`, `.downarrow`, plus the horizontal variants) replace the clam-derived defaults via custom layouts.
 
 - **ttk classes — styled today:** TButton (default + Primary + Accent variants), TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TCheckbutton, TRadiobutton, TScrollbar, TSeparator.
 - **ttk classes — pending:** TPanedwindow, TSizegrip, Treeview.
-- **Image elements — implemented:** `Spectrum.Checkbutton.indicator`, `Spectrum.Radiobutton.indicator` (built from SVG strings, support normal/hover/disabled and selected/alternate combinations, recolor on dark-mode toggle without re-creating elements).
+- **Image elements — implemented:** `Spectrum.Checkbutton.indicator`, `Spectrum.Radiobutton.indicator`, and the eight scrollbar elements (`Spectrum.{V,H}scroll.{trough,thumb,uparrow|leftarrow,downarrow|rightarrow}`). All built from SVG strings, support normal/hover/pressed/disabled where applicable, and recolor on dark-mode toggle without re-creating elements.
 - **Classic widgets** (configured via the option database in `refreshOptions`): partial — Text and Menu are configured today. Pending: Toplevel, Frame, Label, Button, Checkbutton, Radiobutton, Entry, Listbox, Scrollbar, Scale, Spinbox, Menubutton, Message, Canvas.
 - **Image elements** will be used where solid fills can't reach Spectrum fidelity (e.g. checkbox/radio indicators, switch track, scrollbar thumb shape, focus ring). They are produced from inline SVG via `::spectrum::priv::svg_image`, which caches by content + DPI scaling.
 

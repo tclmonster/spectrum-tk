@@ -64,7 +64,7 @@ The command form is the idiomatic Tk style and composes directly with `pack`/`gr
 | SVG photo factory (`::spectrum::priv::svg_image`) | Implemented |
 | Concrete `spectrum::*` components | Planned |
 
-Scrollbars use a native-look style per platform — they keep arrow buttons and follow Windows / macOS / Linux conventions for thumb shape, while still pulling colors from Spectrum tokens.
+Scrollbars use a unified Windows 11-style appearance on every platform — rounded chevron arrows and a slim rounded-pill thumb, 16px wide, drawn from SVG and recolored from Spectrum tokens.
 
 This table is updated as work lands.
 
