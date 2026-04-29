@@ -20,5 +20,8 @@
   "homepage": "https://github.com/tclmonster/spectrum-tk#readme",
   "dependencies": {
     "@adobe/spectrum-tokens": "^14.5.0"
+  },
+  "devDependencies": {
+    "@react-spectrum/s2": "^1.3.0"
   }
 }
