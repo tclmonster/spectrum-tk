@@ -10,11 +10,13 @@ Required runtime: **Tcl/Tk 9.x** (for `oo::configurable`, `oo::abstract`, and bu
 
 For the layered architecture (theme foundation → OO infrastructure → concrete components), the file layout, and the generation pipeline, read [docs/architecture.md](docs/architecture.md). For phase-by-phase status, the same file's component table is the live reference.
 
-## The three reference sources
+## The four reference sources
 
 When you need to know something Spectrum-related, check these in this order. **Do not invent — look it up.**
 
-### 1. `node_modules/@adobe/spectrum-tokens/src/*.json` — design tokens (source of truth)
+All four live as **git submodules** under the project root. Initialize them with `git submodule update --init --recursive`. They are reference-only — never imported at runtime; the generators read them and emit checked-in `.tcl` files.
+
+### 1. `spectrum-design-data/packages/tokens/src/*.json` — design tokens (source of truth)
 
 JSON files keyed by token name. Each token has:
 - `value` (literal `rgb(...)`, `12px`, etc.) **or** `sets` keyed by mode (`light`, `dark`, `wireframe`, `desktop`).
@@ -26,21 +28,44 @@ Files:
 - `typography.json` — font families, sizes, weights.
 - `icons.json` — icon-related tokens.
 
-Read with `jq`/Node when exploring. For everyday use, the same data is already exposed at runtime via `::spectrum::var(token-name)` (see `spectrum-vars.tcl`, regenerated from these JSONs by `gen-spectrum-vars.tcl`).
+The same data is already exposed at runtime via `::spectrum::var(token-name)` (see `spectrum-vars.tcl`, regenerated from these JSONs by `gen-spectrum-vars.tcl`).
 
-> The `spectrum-design-data` MCP returns `total: 0` components — do not rely on it. Use the JSON files directly.
+The `spectrum-design-data` repository **also** contains:
 
-### 2. `node_modules/@react-spectrum/s2/src/*.tsx` — reference implementations
+- `packages/component-schemas/schemas/components/*.json` — **per-component prop schemas** (variants, sizes, states, booleans). 80 components. This is the canonical surface for Phase-2 token classes and Phase-3 component constructors. Each file has `properties.<prop>.enum` / `default` for variants, `meta.category` and `meta.documentationUrl` for grouping.
+- `docs/s2-docs/` — Adobe's **hand-written Spectrum 2 design guidelines** in markdown. The most useful directory for porting work:
+  - `fundamentals/{introduction,principles,home}.md` — Spectrum 2 intro and design principles.
+  - `designing/*.md` — design language fundamentals: `colors`, `grays`, `typography-fundamentals`, `fonts`, `spacing`, `motion`, `states`, `attention-hierarchy`, `icon-fundamentals`, `using-icons`, `illustrations`, `object-styles`, `containers`, `background-layers`, `brand`, plus the `app-frame-*` files. Read these for spec-level details that schemas don't capture (e.g. motion durations, focus ring offset, icon sizing rules).
+  - `components/{actions,containers,feedback,inputs,navigation,status}/<name>.md` — per-component design guidance: overview, anatomy, prop table, states, behaviors (keyboard focus, tooltip, cursor style, etc.), usage guidelines, do's and don'ts, related components. **This replaces the role `@react-spectrum/s2` played for behavioral specs** — read it when you need to know *how* a component should behave, not just *what* its prop surface is.
+  - `developing/developer-overview.md`, `support/` — supplementary.
+- `docs/markdown/` — **auto-generated** flat markdown mirror of schemas + tokens, used by Adobe's 11ty docs site and an internal chatbot. Less verbose than `s2-docs/` but tied directly to the JSON. Useful as a quick prop-table lookup or for grepping across all components in one file tree:
+  - `components/<name>.md` — schema → table.
+  - `tokens/`, `pages/`, `registry/` — generated token/page/registry references.
+  - Marked **DO NOT EDIT** upstream — read-only for us.
+- `packages/design-data-spec/spec/*.md` — the **normative specification** for token format, taxonomy, cascade, dimensions, manifest, diff, query, evolution. Read when designing the generators or working through token-resolution edge cases (e.g. `cascade.md`, `token-format.md`).
+- `packages/design-system-registry/` — registry-level metadata (component IDs, platform extensions); rarely needed for spectrum-tk.
 
-Adobe's Spectrum 2 component library in React/TypeScript. Use it to answer:
-- "What states does this component have?" (e.g. `isDisabled`, `isInvalid`, `isQuiet`)
-- "What variants exist?" (e.g. Button has `accent`, `primary`, `secondary`, `negative`)
-- "What does focus / hover / press look like behaviorally?"
-- "What sub-elements does this component compose?"
+> Do not use the `spectrum-design-data` MCP — it returns `total: 0`. Read the submodule files directly.
 
-One file per component, named verbatim (`Button.tsx`, `IllustratedMessage.tsx`, `ToggleButton.tsx`). Page-by-page S2 docs are also accessible via the `react-spectrum-s2` MCP (`list_s2_pages`, `get_s2_page`).
+### 2. `spectrum-css/components/<name>/` — reference implementations
 
-### 3. `tcltk/man/{man1,man3,mann}/` — Tcl/Tk 9.x man pages
+Adobe's Spectrum 2 components implemented in plain CSS. Use it to **cross-check our implementation** — what tokens go where, what selectors react to what state, what the visual primitives are.
+
+Each component is a directory: `index.css` (token wiring + selectors), `themes/spectrum-two.css` (concrete token values for Spectrum 2), `stories/`, `dist/`, `package.json`. Component directory names are lowercase Spectrum names (`button`, `actionbutton`, `alertbanner`, `combobox`, ...). Note: directory names drop hyphens — the schema's `action-button.json` corresponds to `actionbutton/`.
+
+Why prefer this over a React implementation: spectrum-css is **declarative** — selectors map directly to states (`:hover`, `[disabled]`, `.is-pressed`), tokens are CSS custom properties resolved literally, no JSX behavioural layer to mentally peel off. We may revisit `@react-spectrum/s2` later for behaviour specs not encoded in CSS, but for now spectrum-css is the cross-check.
+
+### 3. `spectrum-css-workflow-icons/icons/assets/` — workflow icons
+
+Adobe's Spectrum workflow icon library — 396 icons at 20×20 with `viewBox="0 0 20 20"` and `fill="currentColor"` (or `fill="var(--iconPrimary, #222)"` in the source SVG). Two parallel forms:
+
+- `svg/S2_Icon_<Name>_20_N.svg` — raw SVG files. Direct input to `gen-spectrum-icons.tcl` (planned — see architecture.md).
+- `components/icon<Name>.{js,d.ts}` — Lit-element wrappers, one per icon, parameterized on `{ width, height, ariaHidden, title, id, focusable }`. The `.d.ts` defines the public surface — useful as the model for the Tcl wrapper signature (we map `width`/`height` to a single `-size` and inherit color from the parent widget).
+- `manifest.json` — flat list of every SVG and component file.
+
+`gen-spectrum-icons.tcl` will mirror the `gen-spectrum-vars.tcl` pattern: read every SVG, emit `spectrum-icons.tcl` with a generated proc (or `oo::class`) per icon that produces a Tk photo via `::spectrum::priv::svg_image`, parameterized on size and color.
+
+### 4. `tcltk/man/{man1,man3,mann}/` — Tcl/Tk 9.x man pages
 
 The authoritative reference for the Tcl/Tk APIs we are mapping Spectrum onto.
 
@@ -59,13 +84,15 @@ When porting a Spectrum component, the typical question is: "what ttk element / 
 
 Rough sequence when adding a Spectrum component or restyling a ttk class:
 
-1. **Identify tokens.** Find the relevant entries in `@adobe/spectrum-tokens/src/*.json` or in `::spectrum::var()`. Use them — never hardcode colors or sizes.
-2. **Read the spec.** Open the matching `.tsx` in `@react-spectrum/s2/src/` to see states, variants, and composition.
-3. **Find the Tk primitive.** Open the relevant `tcltk/man/mann/*.n` to see what ttk gives you and what you need to extend with image elements / custom layouts.
-4. **Implement** in the right file (`spectrum.tcl` for theme work, `components/Foo.tcl` for concrete components — see [docs/architecture.md](docs/architecture.md)).
-5. **Smoke test** before committing — see [docs/smoke_testing.md](docs/smoke_testing.md).
-6. **Update the docs** that describe what shipped — `docs/architecture.md` coverage tables and `docs/user_guide.md` status table.
-7. **Commit** with a focused message in the style of `git log --oneline`. No Claude attribution trailers.
+1. **Identify tokens.** Find the relevant entries in `spectrum-design-data/packages/tokens/src/*.json` or in `::spectrum::var()`. Use them — never hardcode colors or sizes.
+2. **Read the schema.** Open `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json` for the canonical prop surface (variants, sizes, states, booleans). The same prop table also appears in `docs/markdown/components/<name>.md` if you prefer markdown.
+3. **Read the design guidelines.** Open the matching `docs/s2-docs/components/<category>/<name>.md` for anatomy, behaviors (keyboard focus, tooltip, cursor, transitions), usage guidance, and per-prop description. For cross-cutting design questions (focus ring spec, motion durations, icon sizing), read the relevant `docs/s2-docs/designing/*.md`.
+4. **Cross-check visuals.** Look at `spectrum-css/components/<name>/index.css` and `themes/spectrum-two.css` to see exactly which tokens map to which selectors and states.
+5. **Find the Tk primitive.** Open the relevant `tcltk/man/mann/*.n` to see what ttk gives you and what you need to extend with image elements / custom layouts.
+6. **Implement** in the right file (`spectrum.tcl` for theme work, `components/Foo.tcl` for concrete components — see [docs/architecture.md](docs/architecture.md)).
+7. **Smoke test** before committing — see [docs/smoke_testing.md](docs/smoke_testing.md).
+8. **Update the docs** that describe what shipped — `docs/architecture.md` coverage tables and `docs/user_guide.md` status table.
+9. **Commit** with a focused message in the style of `git log --oneline`. No Claude attribution trailers.
 
 ## Smoke testing
 
@@ -87,9 +114,12 @@ For visual inspection, run `kitchen-sink.tcl` directly in `tclkit` — it shows 
 
 - `spectrum.tcl` — Theme entry point, `::spectrum::Theme` class, all per-class `Refresh*` methods, SVG helpers (`svg_image`, `set_image`, `checkbox_svg`, `radio_svg`, `scrollbar_*_svg`).
 - `spectrum-vars.tcl` — generated tokens. Regenerate with `tclkitsh gen-spectrum-vars.tcl > spectrum-vars.tcl`.
+- `spectrum-icons.tcl` — generated icon procedures (planned; from `gen-spectrum-icons.tcl`).
 - `kitchen-sink.tcl` — visual test harness covering every standard widget.
 - `docs/` — architecture, user guide, test strategy, smoke testing, next steps.
 - `components/` — concrete Phase-3 components (planned, not yet present).
-- `node_modules/` — Adobe Spectrum tokens + `@react-spectrum/s2` reference source. Reference-only; never imported at runtime.
+- `spectrum-design-data/` — submodule. Tokens, component schemas, design-data spec. Reference-only.
+- `spectrum-css/` — submodule. Adobe's CSS implementation; cross-check our styling against it.
+- `spectrum-css-workflow-icons/` — submodule. Workflow-icon SVGs and Lit wrappers; input to `gen-spectrum-icons.tcl`.
 - `tcltk/` — local copy of Tcl/Tk 9.x man pages.
 - `~/.claude/projects/.../memory/MEMORY.md` — auto-memory entries (terminology, scrollbar policy, smoke-testing approach, etc.). Loaded automatically.

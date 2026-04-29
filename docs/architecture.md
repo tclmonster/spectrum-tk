@@ -11,6 +11,18 @@ Bring the **Adobe Spectrum 2** design system to **Tcl/Tk 9.x**, both as:
 
 The design system is the source of truth. Component names, variants, prop names, and visual specifications mirror Adobe's terminology; we do not Tcl-ify them.
 
+## Reference materials
+
+Adobe ships the design system as code, not just documentation. Three git submodules under the project root provide the inputs the generators read and the references porting work cross-checks against:
+
+| Submodule | What it provides | Used by |
+| --- | --- | --- |
+| `spectrum-design-data/` | Tokens (`packages/tokens/src/*.json`), per-component prop schemas (`packages/component-schemas/schemas/components/*.json`), normative spec (`packages/design-data-spec/spec/*.md`), hand-written Spectrum 2 design guidelines (`docs/s2-docs/{fundamentals,designing,components}/*.md`), and an auto-generated flat markdown mirror (`docs/markdown/`) | `gen-spectrum-vars.tcl`, `gen-spectrum-components.tcl`; porting work reads `docs/s2-docs/components/<category>/<name>.md` for anatomy/behaviors/usage and `docs/s2-docs/designing/*.md` for cross-cutting design language |
+| `spectrum-css/` | Adobe's CSS implementation, one directory per component with `index.css` + `themes/spectrum-two.css` | Cross-check: read alongside porting work to confirm token-to-state mapping |
+| `spectrum-css-workflow-icons/` | 396 workflow icon SVGs at 20×20 (`icons/assets/svg/*.svg`) plus parallel Lit-element wrappers (`icons/assets/components/icon<Name>.{js,d.ts}`) | `gen-spectrum-icons.tcl` (planned) |
+
+`docs/s2-docs/` is the authoritative *design* reference — when a component's *behaviour* (keyboard focus, tooltip-on-hover-with-hidden-label, transition timing) isn't visible in the schema or CSS, this is where it's specified. It supersedes the role `@react-spectrum/s2` previously played in the workflow.
+
 ## Layered design
 
 ```
@@ -32,7 +44,7 @@ The design system is the source of truth. Component names, variants, prop names,
 │  and RGBA blend helper live here.                          │
 ├────────────────────────────────────────────────────────────┤
 │  Tokens                                                    │
-│  spectrum-vars.tcl (generated from @adobe/spectrum-tokens) │
+│  spectrum-vars.tcl (generated from spectrum-design-data)   │
 │  — colors, layout, typography exposed as ::spectrum::var() │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -65,9 +77,11 @@ Scrollbars deliberately diverge from Spectrum 2 web specs and use a unified **Wi
 
 #### `::spectrum::token::*` (generated)
 
-One `oo::abstract` + `oo::configurable` class per `component` field in `@adobe/spectrum-tokens`. Each declares properties matching the tokens for that component (e.g. `-backgroundColorDefault`, `-cornerRadius`), with values resolved from `::spectrum::var(...)` and dark-mode aware.
+One `oo::abstract` + `oo::configurable` class per `component` field in `spectrum-design-data/packages/tokens/src`. Each declares properties matching the tokens for that component (e.g. `-backgroundColorDefault`, `-cornerRadius`), with values resolved from `::spectrum::var(...)` and dark-mode aware.
 
 These are mixed into concrete component classes; they are never instantiated directly. The generator (`gen-spectrum-components.tcl`) emits `spectrum-components.tcl` which is checked in, mirroring the `gen-spectrum-vars.tcl` → `spectrum-vars.tcl` pipeline.
+
+The component prop surface (variants, sizes, boolean states) is **not** in the token JSONs — it lives in `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json`. The generator reads both: tokens for the styling property bag, schemas for the configurable prop names, enums, and defaults.
 
 ### Phase 3 — Concrete components
 
@@ -95,17 +109,48 @@ The lowercase aliases are minted at package-load time by iterating `info class s
 
 ## Generation pipeline
 
+Three generators read from git submodules and emit checked-in `.tcl` files. None of the submodules are loaded at runtime — they're reference inputs only.
+
 ```
-node_modules/@adobe/spectrum-tokens/src/*.json
+spectrum-design-data/packages/tokens/src/*.json
        │
-       ├── gen-spectrum-vars.tcl       → spectrum-vars.tcl       (checked in)
+       ├── gen-spectrum-vars.tcl              → spectrum-vars.tcl       (checked in)
        │       (colors, layout, typography → ::spectrum::var())
        │
-       └── gen-spectrum-components.tcl → spectrum-components.tcl (checked in)
-               (per-component-field abstracts → ::spectrum::token::*)
+       └─┬─ gen-spectrum-components.tcl       → spectrum-components.tcl (checked in)
+         │     (per-component-field abstracts → ::spectrum::token::*)
+         │
+         └─ also reads:
+            spectrum-design-data/packages/component-schemas/schemas/components/*.json
+              (variants, sizes, boolean states → oo::configurable properties)
+
+spectrum-css-workflow-icons/icons/assets/svg/*.svg
+       │
+       └── gen-spectrum-icons.tcl             → spectrum-icons.tcl      (checked in)
+               (one proc per icon, parameterized on size + color via SVG photo)
 ```
 
-Both are regenerated only when bumping `@adobe/spectrum-tokens`. `tclkitsh` is the recommended runner — see the README.
+All three regenerate only when the upstream submodules are bumped. `tclkitsh` is the recommended runner — see the README. To pull upstream updates: `git submodule update --remote --merge`.
+
+### `gen-spectrum-icons.tcl` (planned)
+
+Reads each `S2_Icon_<Name>_20_N.svg` in `spectrum-css-workflow-icons/icons/assets/svg/` and emits one Tcl wrapper per icon.
+
+The model is the Lit-element wrapper from `icons/assets/components/icon<Name>.{js,d.ts}`:
+
+```ts
+// icons/assets/components/icon3D.d.ts
+export declare const icon3D: ({ width, height, ariaHidden, title, id, focusable }?: {...}) => string | TemplateResult;
+```
+
+The Tcl mirror is simpler — no DOM, no a11y attributes (Tk handles those at the widget level). Each generated proc accepts `-size` (default 20, the icon's natural viewBox) and `-color` (default `currentColor`-equivalent: `$::spectrum::var(neutral-content-color-default)` resolved at call time), substitutes them into the SVG body, and returns a Tk photo image via `::spectrum::priv::svg_image` (which caches by content + DPI).
+
+```tcl
+spectrum::icon::3D -size 16 -color $::spectrum::var(accent-color-900)
+;# → photo image name
+```
+
+Naming preserves Spectrum's PascalCase: `S2_Icon_AlertTriangle_20_N.svg` → `::spectrum::icon::AlertTriangle`. Components consume icons by token (e.g. Button reads `spectrum-workflow-icon-size-100` from the layout tokens to pick a size).
 
 ## Transparency
 
@@ -127,26 +172,34 @@ Spectrum specifies short transitions (~130ms) for hover/press/focus and continuo
 
 ```
 spectrum-tk/
-├── spectrum.tcl                # Theme entry point + ::spectrum::Theme class
-├── spectrum-vars.tcl           # Generated tokens
-├── spectrum-components.tcl     # Generated abstract token classes (Phase 2 — planned)
-├── gen-spectrum-vars.tcl       # Token → vars generator
-├── gen-spectrum-components.tcl # Tokens → abstract classes generator (Phase 2 — planned)
+├── spectrum.tcl                  # Theme entry point + ::spectrum::Theme class
+├── spectrum-vars.tcl             # Generated tokens
+├── spectrum-components.tcl       # Generated abstract token classes (Phase 2 — planned)
+├── spectrum-icons.tcl            # Generated icon procedures (planned)
+├── gen-spectrum-vars.tcl         # Token JSON → vars generator
+├── gen-spectrum-components.tcl   # Token JSON + component schemas → abstract classes (planned)
+├── gen-spectrum-icons.tcl        # Icon SVG → Tcl wrapper generator (planned)
 ├── pkgIndex.tcl
-├── kitchen-sink.tcl            # Visual test harness — every standard Tk/Ttk widget
-├── components/                 # Concrete components (Phase 3 — planned)
-│   ├── _component.tcl          # ::spectrum::Component base
+├── kitchen-sink.tcl              # Visual test harness — every standard Tk/Ttk widget
+├── components/                   # Concrete components (Phase 3 — planned)
+│   ├── _component.tcl            # ::spectrum::Component base
 │   ├── Button.tcl
 │   ├── Switch.tcl
 │   └── ...
 ├── docs/
 │   ├── architecture.md
 │   ├── user_guide.md
-│   └── test_strategy.md
-└── test/                       # tcltest suites (planned)
+│   ├── test_strategy.md
+│   ├── smoke_testing.md
+│   └── next_steps.md
+├── test/                         # tcltest suites (planned)
+├── spectrum-design-data/         # submodule — tokens, component schemas, design-data spec
+├── spectrum-css/                 # submodule — Adobe's CSS reference implementation
+├── spectrum-css-workflow-icons/  # submodule — workflow-icon SVGs + Lit wrappers
+└── tcltk/                        # local copy of Tcl/Tk 9.x man pages
 ```
 
 ## Open questions
 
 - RGBA generation strategy: emit `_on_<surface>` variants vs. emit raw RGBA and resolve at runtime. Decide when first needed.
-- Whether Phase-2 abstracts should be one-per-token-component or one-per-S2-component (some S2 components like `Button` cover several token-components: `button`, `action-button`, `floating-action-button`).
+- Whether Phase-2 abstracts should be one-per-token-component or one-per-spectrum-design-data-component (some spectrum-design-data components like `Button` may cover several token-components: `button`, `action-button`, `floating-action-button`).

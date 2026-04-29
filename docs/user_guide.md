@@ -9,10 +9,12 @@
 ```sh
 git clone https://github.com/tclmonster/spectrum-tk.git
 cd spectrum-tk
-npm install   # one-time, only needed to (re)generate tokens
+git submodule update --init --recursive   # one-time, only needed to (re)generate tokens/icons
 ```
 
 `spectrum-tk` requires **Tcl/Tk 9.x** (for built-in SVG support and `oo::configurable`). A portable `tclkit` runner is linked from the README.
+
+The submodules (`spectrum-design-data`, `spectrum-css`, `spectrum-css-workflow-icons`) provide tokens, component schemas, and icon SVGs upstream — they are inputs to the generators, not runtime dependencies. If you only consume `spectrum-tk` via `package require spectrum`, you don't need them.
 
 ## Quick start
 
@@ -92,10 +94,10 @@ Application-specific styles can extend the theme by adding new ttk styles in the
 
 ## Regenerating tokens
 
-Only needed when bumping `@adobe/spectrum-tokens`:
+Only needed when bumping the `spectrum-design-data` submodule:
 
 ```sh
-npm install
+git submodule update --remote --merge spectrum-design-data
 ./tclkitsh-9.0.3-<platform> gen-spectrum-vars.tcl > spectrum-vars.tcl
 ```
 

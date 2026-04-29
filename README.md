@@ -4,22 +4,34 @@
 
 A Ttk theme for Tcl/Tk that follows [Adobe's Spectrum 2](https://spectrum.adobe.com/) design system.
 
-The theme consumes design tokens published by Adobe ([@adobe/spectrum-tokens](https://www.npmjs.com/package/@adobe/spectrum-tokens)) and converts them into Tcl variables that drive a Ttk theme implementation. It targets **Tcl/Tk 9.x**, which provides built-in SVG support — useful for Spectrum's icon and illustration set.
+The theme consumes Adobe's design tokens (vendored as a git submodule from [`spectrum-design-data`](https://github.com/adobe/spectrum-design-data)) and converts them into Tcl variables that drive a Ttk theme implementation. It targets **Tcl/Tk 9.x**, which provides built-in SVG support — useful for Spectrum's icon and illustration set.
 
 ## Repository Layout
 
-| File | Purpose |
+| File / directory | Purpose |
 | --- | --- |
 | `spectrum.tcl` | Theme entry point. Defines fonts, dark-mode detection, and Ttk styles. |
 | `spectrum-vars.tcl` | Generated variable definitions (colors, layout, typography). Do not edit by hand. |
-| `gen-spectrum-vars.tcl` | Reads Adobe's JSON tokens from `node_modules` and emits `spectrum-vars.tcl`. |
+| `gen-spectrum-vars.tcl` | Reads Adobe's JSON tokens from `spectrum-design-data/` and emits `spectrum-vars.tcl`. |
 | `pkgIndex.tcl` | Standard Tcl package index. |
-| `package.json` | Pulls the Adobe Spectrum tokens via npm. |
+| `spectrum-design-data/` | Submodule. Tokens, component schemas, design-data spec, design guidelines. |
+| `spectrum-css/` | Submodule. Adobe's CSS reference implementation. |
+| `spectrum-css-workflow-icons/` | Submodule. Workflow icon SVGs and Lit wrappers. |
 
 ## Requirements
 
 - Tcl/Tk **9.x**
-- Node.js / npm (only required to fetch and regenerate the design tokens)
+- `git` with submodule support (only required if you intend to regenerate tokens or icons)
+
+## Cloning
+
+```sh
+git clone https://github.com/tclmonster/spectrum-tk.git
+cd spectrum-tk
+git submodule update --init --recursive   # only needed to (re)generate tokens or icons
+```
+
+If you only intend to consume `spectrum-tk` via `package require spectrum`, the submodules are unnecessary — the generated `spectrum-vars.tcl` is checked in.
 
 ## Usage
 
@@ -34,7 +46,7 @@ spectrum::theme use
 The generated file is checked in, so you only need this when bumping the upstream design tokens.
 
 ```sh
-npm install
+git submodule update --remote --merge spectrum-design-data
 tclsh gen-spectrum-vars.tcl       # any Tcl 9.x interpreter with the tjson package
 ```
 

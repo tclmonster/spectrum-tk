@@ -22,17 +22,17 @@ if {$argv ne ""} {
     exit 1
 }
 
-set node_modules [file join [file dirname [info script]] node_modules]
-set spectrum_dir [file join $node_modules @adobe spectrum-tokens src]
-set package_lock [file join $node_modules .package-lock.json]
+set tokens_pkg   [file join [file dirname [info script]] spectrum-design-data packages tokens]
+set spectrum_dir [file join $tokens_pkg src]
+set package_json [file join $tokens_pkg package.json]
 
 if {! [file isdirectory $spectrum_dir]} {
-    puts stderr "\"$spectrumdir\" must be a valid directory"
+    puts stderr "\"$spectrum_dir\" must be a valid directory; please run \"git submodule update --init --recursive\""
     exit 1
 }
 
-if {![file exists $package_lock]} {
-    puts stderr "Lock file \"$package_lock\" is required to determine version"
+if {![file exists $package_json]} {
+    puts stderr "\"$package_json\" is required to determine version; please run \"git submodule update --init --recursive\""
     exit 1
 }
 
@@ -47,11 +47,10 @@ proc parse_json_file {file} {
 }
 
 if {[catch {
-    dict get [parse_json_file $package_lock] \
-        "packages" "node_modules/@adobe/spectrum-tokens" "version"
+    dict get [parse_json_file $package_json] "version"
 
 } spectrum_version]} {
-    puts stderr "Missing @adobe/spectrum-tokens package; please run \"npm install\" to install it."
+    puts stderr "Could not read version from $package_json"
     exit 1
 }
 

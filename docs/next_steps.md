@@ -66,11 +66,42 @@ Not started. Three artifacts need to land here:
 
 ### `gen-spectrum-components.tcl` → `spectrum-components.tcl`
 
-Mirror of `gen-spectrum-vars.tcl`. Reads the same JSONs but groups tokens by `component` field (92 components — see architecture.md). For each, emits an `oo::abstract create ::spectrum::token::ComponentName { ... }` class using `oo::configurable` properties, where each property maps to a token name (camelCase). The generated file is checked in. Run with `tclkitsh`.
+Mirror of `gen-spectrum-vars.tcl`. Reads two inputs from the `spectrum-design-data` submodule:
+
+1. `packages/tokens/src/*.json` — groups tokens by `component` field (92 components — see architecture.md) for the styling property bag.
+2. `packages/component-schemas/schemas/components/<name>.json` — for the prop surface (variants, sizes, boolean states, defaults).
+
+For each component, emits an `oo::abstract create ::spectrum::token::ComponentName { ... }` class using `oo::configurable` properties. Token-derived properties map to camelCase (e.g. `-backgroundColorDefault`); schema-derived properties keep the schema's exact key (`-variant`, `-size`, `-isDisabled`). The generated file is checked in. Run with `tclkitsh`.
+
+When implementing concrete components, also read `spectrum-design-data/docs/s2-docs/components/<category>/<name>.md` for behaviour specs (keyboard focus, tooltip behaviour, cursor style, transition timing) and cross-check the visual mapping against `spectrum-css/components/<name>/`.
 
 ### Lowercase command-style aliases
 
 After all concrete component files are sourced, sweep `info class subclasses ::spectrum::Component` and emit a lowercase command for each (`spectrum::Button` → `spectrum::button`). The lowercase form composes idiomatically with `pack`/`grid`/`place`. Single sweep at package init time.
+
+---
+
+## `gen-spectrum-icons.tcl` → `spectrum-icons.tcl`
+
+Not started. Third generator in the family (alongside `gen-spectrum-vars.tcl` and `gen-spectrum-components.tcl`).
+
+**Inputs:**
+- `spectrum-css-workflow-icons/icons/assets/svg/S2_Icon_<Name>_20_N.svg` — 396 SVGs at viewBox 20×20 with `fill="var(--iconPrimary, #222)"`. The generator strips the `var(...)` and leaves the fill as a substitution slot.
+- `spectrum-css-workflow-icons/icons/assets/components/icon<Name>.d.ts` — useful as the *shape* model for the wrapper signature; we don't consume the JS.
+
+**Output:** `spectrum-icons.tcl`, a checked-in file with one proc per icon, mirrored to PascalCase (`S2_Icon_AlertTriangle_20_N.svg` → `::spectrum::icon::AlertTriangle`).
+
+```tcl
+spectrum::icon::AlertTriangle ?-size $px? ?-color $color?
+;# returns a Tk photo image name suitable for -image on any widget that
+;# accepts photos (Button -image, Label -image, etc.)
+```
+
+`-size` defaults to 20 (the icon's natural viewBox); `-color` defaults to a theme-token equivalent of `currentColor` (e.g. `$::spectrum::var(neutral-content-color-default)`). The generator substitutes both into the SVG body and rasterizes via `::spectrum::priv::svg_image`, which already caches by content + DPI.
+
+A second sweep emits a manifest map (`::spectrum::icon::names` → list of icon names) for runtime introspection. No per-icon `oo::class` — these are pure factory procs because icons have no instance state once produced.
+
+When the schema-driven Phase-3 generator hits `properties.icon` (as in `button.json`), the concrete component wires the `-icon` configurable to call into this namespace, so usage is `spectrum::button .b -icon AlertTriangle`.
 
 ---
 
@@ -84,7 +115,7 @@ Not started. Recommended start order (proven mechanism, then breadth):
 4. **Checkbox** — already has the indicator element; the concrete class wires up `-isIndeterminate` and the label.
 5. **Tooltip** — first transient `toplevel` component; sets the pattern for Popover, Toast, ContextualHelp.
 
-Then iterate by Spectrum's catalog. The full list of S2 components is in `node_modules/@react-spectrum/s2/src/`; refer to that source plus the `react-spectrum-s2` MCP for behavior specs. Tier breakdown (direct ttk / composite / canvas-drawn) is in architecture.md §Phase 3.
+Then iterate by Spectrum's catalog. The canonical component list is `spectrum-design-data/packages/component-schemas/schemas/components/*.json` (80 components); the matching design guidelines are under `spectrum-design-data/docs/s2-docs/components/{actions,containers,feedback,inputs,navigation,status}/<name>.md` and the CSS reference implementation is under `spectrum-css/components/<name>/`. Tier breakdown (direct ttk / composite / canvas-drawn) is in architecture.md §Phase 3.
 
 ---
 
@@ -113,8 +144,10 @@ Tests use `tcltest` + `event generate`. No mocking, no screenshot diffing. Conve
 
 ## When in doubt
 
-- **Where does this token come from?** → `node_modules/@adobe/spectrum-tokens/src/*.json`
-- **What does this component look like / behave like?** → `node_modules/@react-spectrum/s2/src/*.tsx`
+- **Where does this token come from?** → `spectrum-design-data/packages/tokens/src/*.json`
+- **What is this component's prop surface?** → `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json` (or the matching `docs/markdown/components/<name>.md`)
+- **What does this component look like / behave like?** → `spectrum-design-data/docs/s2-docs/components/<category>/<name>.md` (anatomy, states, behaviors, usage); cross-check visuals with `spectrum-css/components/<name>/`
+- **Cross-cutting design language (motion timings, focus-ring spec, icon sizing)?** → `spectrum-design-data/docs/s2-docs/designing/*.md`
 - **What ttk option / element / state does this need?** → `tcltk/man/mann/ttk_*.n`, `image.n`, `bind.n`
 - **How do I verify my change?** → `docs/smoke_testing.md`, then `kitchen-sink.tcl` for visual
 
