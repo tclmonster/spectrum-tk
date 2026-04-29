@@ -88,7 +88,7 @@ For visual inspection, run `kitchen-sink.tcl` directly in `tclkit` — it shows 
 - `spectrum.tcl` — Theme entry point, `::spectrum::Theme` class, all per-class `Refresh*` methods, SVG helpers (`svg_image`, `set_image`, `checkbox_svg`, `radio_svg`, `scrollbar_*_svg`).
 - `spectrum-vars.tcl` — generated tokens. Regenerate with `tclkitsh gen-spectrum-vars.tcl > spectrum-vars.tcl`.
 - `kitchen-sink.tcl` — visual test harness covering every standard widget.
-- `docs/` — architecture, user guide, test strategy, smoke testing.
+- `docs/` — architecture, user guide, test strategy, smoke testing, next steps.
 - `components/` — concrete Phase-3 components (planned, not yet present).
 - `node_modules/` — Adobe Spectrum tokens + `@react-spectrum/s2` reference source. Reference-only; never imported at runtime.
 - `tcltk/` — local copy of Tcl/Tk 9.x man pages.
