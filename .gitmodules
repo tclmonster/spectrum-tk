@@ -1,0 +1,9 @@
+[submodule "spectrum-design-data"]
+	path = spectrum-design-data
+	url = https://github.com/adobe/spectrum-design-data.git
+[submodule "spectrum-css"]
+	path = spectrum-css
+	url = https://github.com/adobe/spectrum-css.git
+[submodule "spectrum-css-workflow-icons"]
+	path = spectrum-css-workflow-icons
+	url = https://github.com/adobe/spectrum-css-workflow-icons.git
