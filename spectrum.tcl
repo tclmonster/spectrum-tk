@@ -613,33 +613,49 @@ oo::class create ::spectrum::Theme {
 
     method RefreshNotebook {} {
         namespace upvar ::spectrum var var
-        # Selected tab merges with the panel below (background-base-color).
-        # Default and hover tabs sit one or two layer-steps below the panel so
-        # unselected tabs read as inactive.
-        set tab_bg      $var(gray-100)
-        set tab_hover   [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
+        # Spectrum 2 tabs are flat: tab strip is transparent with a gray-200
+        # divider line, and only text colour distinguishes default / hover /
+        # selected. Faithful rendering of the 2px selection-indicator stripe
+        # needs custom layout (deferred — see docs/next_steps.md). Within the
+        # clam Notebook layout we approximate by sitting unselected tabs one
+        # elevation layer below the strip (background-layer-1-color) so they
+        # remain distinguishable from the selected tab, which merges with the
+        # panel below (background-base-color).
+        set tab_bg      $var(background-layer-1-color)
+        # Hover sits between the unselected bg (gray-50) and the border
+        # (gray-200). gray-75 is subtle in light; gray-100 in dark stays clear
+        # of the border so hover doesn't blend into it.
+        set tab_hover   [expr {$var(darkmode) ? $var(gray-100) : $var(gray-75)}]
         set tab_sel     $var(background-base-color)
+        set tab_border  $var(gray-200)
         ttk::style theme settings spectrum {
             ttk::style configure TNotebook \
-                -background $var(background-base-color) \
+                -background  $var(background-base-color) \
+                -bordercolor $tab_border \
+                -lightcolor  $tab_border \
+                -darkcolor   $tab_border \
                 -borderwidth 0 \
-                -tabmargins [list 0 0 0 0]
+                -tabmargins  [list 0 0 0 0]
             ttk::style configure TNotebook.Tab \
                 -background $tab_bg \
-                -foreground $var(body-color) \
-                -bordercolor $var(gray-300) \
-                -lightcolor  $var(gray-300) \
-                -darkcolor   $var(gray-300) \
+                -foreground $var(neutral-subdued-content-color-default) \
+                -bordercolor $tab_border \
+                -lightcolor  $tab_border \
+                -darkcolor   $tab_border \
                 -padding [list $var(spacing-300) $var(spacing-100)] \
                 -font $var(component-m-regular)
+            # Per-tab hover uses the element-level "active" state, not the
+            # widget-level "hover" state — otherwise every unselected tab
+            # brightens whenever the mouse enters the Notebook strip.
             ttk::style map TNotebook.Tab \
                 -background [list \
                     disabled            $var(disabled-background-color) \
                     selected            $tab_sel \
-                    {hover !selected}   $tab_hover] \
+                    {active !selected}  $tab_hover] \
                 -foreground [list \
                     disabled            $var(disabled-content-color) \
-                    selected            $var(accent-content-color-default)]
+                    selected            $var(neutral-subdued-content-color-down) \
+                    {active !selected}  $var(neutral-subdued-content-color-hover)]
         }
     }
 
@@ -835,12 +851,12 @@ oo::class create ::spectrum::Theme {
                 -darkcolor       $border \
                 -borderwidth     1 \
                 -font            $var(component-m-regular) \
-                -rowheight       $var(table-row-height-medium-regular)
+                -rowheight       $var(table-row-height-medium-compact)
             ttk::style map Treeview \
                 -background [list \
                     disabled            $var(disabled-background-color) \
                     selected            $sel_bg \
-                    {hover !selected}   $hover_bg] \
+                    {active !selected}  $hover_bg] \
                 -foreground [list \
                     disabled $var(disabled-content-color) \
                     selected $sel_fg]
@@ -859,7 +875,7 @@ oo::class create ::spectrum::Theme {
                 -background [list \
                     disabled            $var(disabled-background-color) \
                     {pressed !disabled} $heading_pres \
-                    {hover !disabled}   $heading_hov] \
+                    {active !disabled}  $heading_hov] \
                 -foreground [list disabled $var(disabled-content-color)]
         }
     }

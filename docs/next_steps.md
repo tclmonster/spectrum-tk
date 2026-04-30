@@ -39,12 +39,12 @@ Initial styling for every ttk class is in place, but each class needs to be cros
 - TSeparator, TPanedwindow Sash — vs `divider/`
 - TScrollbar thumb + arrow — vs `scrollbar/`
 - Treeview (body, heading, border, row height, heading bold font) — vs `table/`, `treeview/`
+- TNotebook (tab text neutral-subdued ramp, gray-200 divider) — vs `tabs/`. Faithful selection-indicator stripe deferred (see Polish opportunities below).
 
 **Not yet audited:**
 
 - TLabel, TFrame, TLabelframe
 - TMenubutton — vs `picker/` or `actionbutton/`
-- TNotebook — vs `tabs/`
 - TProgressbar — vs `progressbar/`
 - TScale — vs `slider/` (only kitchen-sink visibility fix has landed; not a full audit)
 - TCheckbutton, TRadiobutton — SVG indicators are in place; label / spacing / disabled-content colors not formally cross-checked vs `checkbox/`, `radio/`
@@ -137,10 +137,12 @@ Tests use `tcltest` + `event generate`. No mocking, no screenshot diffing. Conve
 
 ## Polish opportunities (lower priority)
 
+- **TNotebook tab indicator stripe (Spectrum 2 fidelity).** S2 Tabs are flat: transparent strip with a 2px gray-200 horizontal divider line, and a 2px selection-indicator stripe in `neutral-subdued-content-color-down` under the active tab. The current colour audit uses neutral-subdued text colours within clam's filled-rectangle layout, so selected vs unselected differ only by text colour. Faithful rendering requires custom layout — replace the `Notebook.tab` element with an image element that paints the indicator stripe only on `selected`, and drop the rectangular tab borders. Cross-check `spectrum-css/components/tabs/index.css` (selection indicator at line ~271).
 - **Focus ring rendering.** ttk's default focus ring is a 1px dotted line; Spectrum uses a 2px solid blue ring at ~2px offset. Implementing this likely needs an SVG image element wrapping each focusable widget.
 - **Animation plumbing.** `::spectrum::priv::animate` for ~130ms hover/press transitions and indeterminate spinners. Outlined in architecture.md §Animation; not yet built.
 - **More TButton variants.** Currently default + Primary + Accent. Spectrum 2 also defines Secondary, Negative, Outline, and Quiet variants.
 - **Treeview row alternation.** Spectrum tables sometimes alternate row backgrounds; ttk supports this via tag binding (`tags add evens` etc.). Could be a configurable theme option.
+- **Treeview per-row hover.** ttk Treeview reports `active` and `hover` only at the *widget* level; neither fires per row, so the `{active !selected}` entry in `ttk::style map Treeview -background` produces no visible row-level hover. Column headings (`Treeview.Heading`) do honour `active` per heading element and hover correctly. Implementing per-row hover needs a `<Motion>` binding that resolves the row under the cursor with `[$tv identify item %x %y]` and applies a `hover` tag (configured with the `tree-view-row-background-hover` token) to that row only, removing it from siblings. The `<Leave>` binding clears the tag. Spec: `tabs/themes/spectrum-two.css` overrides `--spectrum-treeview-item-background-color-hover` to `gray-100`, which our `tree-view-row-background-hover` token already resolves to.
 - **Kitchen-sink improvements.** Add disabled-state samples for every widget (currently only some have them); add an "image elements" tab that displays each generated photo at native size for visual debugging.
 
 ---
