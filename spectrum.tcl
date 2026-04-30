@@ -364,7 +364,7 @@ oo::class create ::spectrum::Theme {
             return
         }
         if {[info commands ::spectrum::SetWindowColor] ne ""} {
-            set cmd [list ::spectrum::SetWindowColor %W $::spectrum::var(gray-100)]
+            set cmd [list ::spectrum::SetWindowColor %W $::spectrum::var(background-base-color)]
             bind [winfo class .] <Map> $cmd
             bind Toplevel <Map> $cmd
 
@@ -383,12 +383,16 @@ oo::class create ::spectrum::Theme {
         }
 
         set border_color [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        # See refreshOptions for the rationale: gray-800 selection background
+        # is dark in light mode and light in dark mode, so the contrasting
+        # content color must be the inverse — white on dark, gray-25 on light.
+        set sel_fg [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
         ttk::style theme settings spectrum {
             ttk::style configure "." \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -selectbackground $var(neutral-background-color-selected-default) \
-                -selectforeground $var(white) \
+                -selectforeground $sel_fg \
                 -font $var(component-m-regular) \
                 -relief flat \
                 -bordercolor $border_color \
@@ -424,7 +428,7 @@ oo::class create ::spectrum::Theme {
         namespace upvar ::spectrum var var
         ttk::style theme settings spectrum {
             ttk::style configure TLabel \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -font $var(component-m-regular)
             ttk::style map TLabel \
@@ -435,7 +439,7 @@ oo::class create ::spectrum::Theme {
     method RefreshFrame {} {
         namespace upvar ::spectrum var var
         ttk::style theme settings spectrum {
-            ttk::style configure TFrame -background $var(gray-100) -borderwidth 0
+            ttk::style configure TFrame -background $var(background-base-color) -borderwidth 0
         }
     }
 
@@ -444,14 +448,14 @@ oo::class create ::spectrum::Theme {
         set border [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
         ttk::style theme settings spectrum {
             ttk::style configure TLabelframe \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -bordercolor $border \
                 -lightcolor $border \
                 -darkcolor $border \
                 -borderwidth 1 \
                 -relief solid
             ttk::style configure TLabelframe.Label \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -font $var(component-m-regular)
         }
@@ -459,12 +463,16 @@ oo::class create ::spectrum::Theme {
 
     method RefreshEntry {} {
         namespace upvar ::spectrum var var
-        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
-        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        # Spectrum 2 textfield (per spectrum-css/components/textfield/themes/
+        # spectrum-two.css): background = gray-25 (= page base), border
+        # gray-500 default → gray-600 hover → focus indicator on focus →
+        # gray-300 when disabled.
+        set border       $var(gray-500)
+        set border_hover $var(gray-600)
         set focus_color  $var(focus-indicator-color)
         ttk::style theme settings spectrum {
             ttk::style configure TEntry \
-                -fieldbackground $var(gray-50) \
+                -fieldbackground $var(background-base-color) \
                 -foreground $var(body-color) \
                 -insertcolor $var(body-color) \
                 -bordercolor $border \
@@ -477,15 +485,15 @@ oo::class create ::spectrum::Theme {
                 -fieldbackground [list disabled $var(disabled-background-color)] \
                 -foreground      [list disabled $var(disabled-content-color)] \
                 -bordercolor     [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -lightcolor      [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -darkcolor       [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover]
         }
@@ -493,13 +501,17 @@ oo::class create ::spectrum::Theme {
 
     method RefreshCombobox {} {
         namespace upvar ::spectrum var var
-        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
-        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        # Spectrum 2 picker (per spectrum-css/components/picker/themes/
+        # spectrum-two.css): background = gray-100 (button-like surface, not
+        # the field surface — clicking opens a popover), border gray-500
+        # default → gray-600 hover, gray-300 when disabled.
+        set border       $var(gray-500)
+        set border_hover $var(gray-600)
         set focus_color  $var(focus-indicator-color)
         ttk::style theme settings spectrum {
             ttk::style configure TCombobox \
-                -fieldbackground $var(gray-50) \
-                -background $var(gray-50) \
+                -fieldbackground $var(gray-100) \
+                -background $var(gray-100) \
                 -foreground $var(body-color) \
                 -arrowcolor $var(body-color) \
                 -insertcolor $var(body-color) \
@@ -514,36 +526,33 @@ oo::class create ::spectrum::Theme {
                 -foreground      [list disabled $var(disabled-content-color)] \
                 -arrowcolor      [list disabled $var(disabled-content-color)] \
                 -bordercolor     [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -lightcolor      [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -darkcolor       [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover]
         }
-        # The combobox popup is a tk::listbox configured via the option db.
-        option add *TCombobox*Listbox.background       $var(gray-50)        widgetDefault
-        option add *TCombobox*Listbox.foreground       $var(body-color)     widgetDefault
-        option add *TCombobox*Listbox.selectBackground $var(neutral-background-color-selected-default) widgetDefault
-        option add *TCombobox*Listbox.selectForeground $var(white)          widgetDefault
-        option add *TCombobox*Listbox.borderWidth      0                    widgetDefault
-        option add *TCombobox*Listbox.font             $var(component-m-regular) widgetDefault
+        # Combobox popup listbox option-db entries are installed in
+        # refreshOptions (see "Combobox popup listbox" block).
     }
 
     method RefreshSpinbox {} {
         namespace upvar ::spectrum var var
-        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-400)}]
-        set border_hover [expr {$var(darkmode) ? $var(gray-500) : $var(gray-500)}]
+        # Spinbox is treated as a textfield with stepper buttons — bg matches
+        # TEntry per Spectrum 2 conventions.
+        set border       $var(gray-500)
+        set border_hover $var(gray-600)
         set focus_color  $var(focus-indicator-color)
         ttk::style theme settings spectrum {
             ttk::style configure TSpinbox \
-                -fieldbackground $var(gray-50) \
-                -background $var(gray-50) \
+                -fieldbackground $var(background-base-color) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -arrowcolor $var(body-color) \
                 -insertcolor $var(body-color) \
@@ -558,15 +567,15 @@ oo::class create ::spectrum::Theme {
                 -foreground      [list disabled $var(disabled-content-color)] \
                 -arrowcolor      [list disabled $var(disabled-content-color)] \
                 -bordercolor     [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -lightcolor      [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover] \
                 -darkcolor       [list \
-                    disabled            $border \
+                    disabled            $var(disabled-border-color) \
                     {focus !disabled}   $focus_color \
                     {hover !disabled}   $border_hover]
         }
@@ -597,12 +606,15 @@ oo::class create ::spectrum::Theme {
 
     method RefreshNotebook {} {
         namespace upvar ::spectrum var var
+        # Selected tab merges with the panel below (background-base-color).
+        # Default and hover tabs sit one or two layer-steps below the panel so
+        # unselected tabs read as inactive.
         set tab_bg      $var(gray-100)
-        set tab_active  [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
-        set tab_focus   $var(gray-50)
+        set tab_hover   [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
+        set tab_sel     $var(background-base-color)
         ttk::style theme settings spectrum {
             ttk::style configure TNotebook \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -borderwidth 0 \
                 -tabmargins [list 0 0 0 0]
             ttk::style configure TNotebook.Tab \
@@ -616,8 +628,8 @@ oo::class create ::spectrum::Theme {
             ttk::style map TNotebook.Tab \
                 -background [list \
                     disabled            $var(disabled-background-color) \
-                    selected            $tab_focus \
-                    {hover !selected}   $tab_active] \
+                    selected            $tab_sel \
+                    {hover !selected}   $tab_hover] \
                 -foreground [list \
                     disabled            $var(disabled-content-color) \
                     selected            $var(accent-content-color-default)]
@@ -711,12 +723,12 @@ oo::class create ::spectrum::Theme {
                 }
             }
             ttk::style configure TCheckbutton \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -font $var(component-m-regular) \
                 -padding [list 0 $var(spacing-100)]
             ttk::style map TCheckbutton \
-                -background [list disabled $var(gray-100)] \
+                -background [list disabled $var(background-base-color)] \
                 -foreground [list disabled $var(disabled-content-color)]
         }
     }
@@ -757,12 +769,12 @@ oo::class create ::spectrum::Theme {
                 }
             }
             ttk::style configure TRadiobutton \
-                -background $var(gray-100) \
+                -background $var(background-base-color) \
                 -foreground $var(body-color) \
                 -font $var(component-m-regular) \
                 -padding [list 0 $var(spacing-100)]
             ttk::style map TRadiobutton \
-                -background [list disabled $var(gray-100)] \
+                -background [list disabled $var(background-base-color)] \
                 -foreground [list disabled $var(disabled-content-color)]
         }
     }
@@ -771,7 +783,7 @@ oo::class create ::spectrum::Theme {
         namespace upvar ::spectrum var var
         set sash [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
         ttk::style theme settings spectrum {
-            ttk::style configure TPanedwindow -background $var(gray-100)
+            ttk::style configure TPanedwindow -background $var(background-base-color)
             ttk::style configure Sash \
                 -background    $sash \
                 -bordercolor   $sash \
@@ -786,7 +798,7 @@ oo::class create ::spectrum::Theme {
         namespace upvar ::spectrum var var
         ttk::style theme settings spectrum {
             ttk::style configure TSizegrip \
-                -background $var(gray-100)
+                -background $var(background-base-color)
         }
     }
 
@@ -798,6 +810,7 @@ oo::class create ::spectrum::Theme {
         set heading_pres [expr {$var(darkmode) ? $var(gray-400) : $var(gray-200)}]
         set hover_bg     $var(tree-view-row-background-hover)
         set sel_bg       $var(neutral-background-color-selected-default)
+        set sel_fg       [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
 
         ttk::style theme settings spectrum {
             ttk::style configure Treeview \
@@ -817,7 +830,7 @@ oo::class create ::spectrum::Theme {
                     {hover !selected}   $hover_bg] \
                 -foreground [list \
                     disabled $var(disabled-content-color) \
-                    selected $var(white)]
+                    selected $sel_fg]
 
             ttk::style configure Treeview.Heading \
                 -background  $heading_bg \
@@ -922,7 +935,11 @@ oo::class create ::spectrum::Theme {
             ttk::style configure TButton -background $var(gray-300) -foreground $var(neutral-content-color-default)
             ttk::style map TButton -background [list {hover !disabled} $var(gray-400)]
 
-            ttk::style configure Primary.TButton -background $var(neutral-background-color-default) -foreground $var(white)
+            # neutral-background-color-default is gray-800 in both modes —
+            # dark in light mode, light in dark mode. The label needs the
+            # inverse for contrast.
+            set primary_fg [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
+            ttk::style configure Primary.TButton -background $var(neutral-background-color-default) -foreground $primary_fg
             ttk::style map Primary.TButton -background [list {hover !disabled} $var(neutral-background-color-hover)]
 
             ttk::style configure Accent.TButton -background $var(accent-background-color-default) -foreground $var(white)
@@ -936,52 +953,222 @@ oo::class create ::spectrum::Theme {
             return
         }
 
-        tk_setPalette \
-            background $var(gray-100) \
-            foreground $var(body-color) \
-            activeBackground $var(informative-background-color-default) \
-            activeForeground $var(white) \
-            selectBackground $var(informative-background-color-default) \
-            selectForeground $var(white) \
-            highlightColor $var(accent-content-color-key-focus) \
-            highlightBackground $var(gray-200) \
-            disabledForeground $var(disabled-content-color) \
-            insertBackground $var(body-color) \
-            troughColor $var(background-pasteboard-color)
+        # We do not call tk_setPalette here. tk_setPalette installs broad
+        # 1-component patterns like *background and *selectColor that
+        # empirically beat our 2-component *Class.option patterns in the
+        # option-db lookup, which is the opposite of what we want. It also
+        # walks the widget tree and directly reconfigures every widget,
+        # which would clobber later option add calls.
+        #
+        # Instead, we install everything explicitly: a small set of global
+        # defaults at widgetDefault priority, then per-class overrides for
+        # every classic widget the theme styles.
+        # Selection: gray-800 background per Spectrum 2 states.md ("Selected
+        # states use a primary style by default, generally through a gray-800
+        # fill"). gray-800 is dark in light mode and light in dark mode, so
+        # the selected-content color must be the inverse to keep contrast.
+        # Spectrum has no neutral-content-color-selected token, so we derive
+        # it: white on dark gray (light mode), gray-25 on light gray (dark).
+        set sel_bg     $var(neutral-background-color-selected-default)
+        set sel_fg     [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
+        set hover_bg   [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
+        set fld_bg     $var(gray-50)
+        set field_font $var(component-m-regular)
+        set comp_font  $var(component-m-regular)
 
-        option add *Text.background $var(background-base-color)
+        # Global defaults for classic widgets. These match anything that
+        # doesn't have a more-specific *Class.option entry below.
+        option add *background          $var(background-base-color)   widgetDefault
+        option add *foreground          $var(body-color)              widgetDefault
+        option add *activeBackground    $hover_bg                     widgetDefault
+        option add *activeForeground    $var(body-color)              widgetDefault
+        option add *selectBackground    $sel_bg                       widgetDefault
+        option add *selectForeground    $sel_fg                       widgetDefault
+        option add *highlightColor      $var(focus-indicator-color)   widgetDefault
+        option add *highlightBackground $var(background-base-color)   widgetDefault
+        option add *disabledForeground  $var(disabled-content-color)  widgetDefault
+        option add *insertBackground    $var(body-color)              widgetDefault
+        option add *troughColor         $var(gray-300)                widgetDefault
 
-        option add *Menu.background $var(gray-200)
-        option add *Menu.foreground $var(body-color)
-        option add *Menu.activeBackground $var(static-blue-900)
-        option add *Menu.activeForeground $var(white)
-        option add *Menu.selectColor $var(body-color)
-        option add *Menu.disabledForeground [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+        # Toplevel + Frame: canvas surface.
+        option add *Toplevel.background    $var(background-base-color) widgetDefault
+        option add *Frame.background       $var(background-base-color) widgetDefault
 
-        option add *font $var(component-m-regular)
+        # Label / Message: body text on canvas.
+        option add *Label.background       $var(background-base-color) widgetDefault
+        option add *Label.foreground       $var(body-color)            widgetDefault
+        option add *Label.font             $comp_font                  widgetDefault
+        option add *Message.background     $var(background-base-color) widgetDefault
+        option add *Message.foreground     $var(body-color)            widgetDefault
+        option add *Message.font           $comp_font                  widgetDefault
 
+        # Button: matches default TButton (gray fill, neutral content).
+        option add *Button.background          $var(gray-300)                       widgetDefault
+        option add *Button.foreground          $var(neutral-content-color-default)  widgetDefault
+        option add *Button.activeBackground    $var(gray-400)                       widgetDefault
+        option add *Button.activeForeground    $var(neutral-content-color-default)  widgetDefault
+        option add *Button.disabledForeground  $var(disabled-content-color)         widgetDefault
+        option add *Button.borderWidth         0                                    widgetDefault
+        option add *Button.relief              flat                                 widgetDefault
+        option add *Button.highlightThickness  0                                    widgetDefault
+        option add *Button.padX                $var(spacing-200)                    widgetDefault
+        option add *Button.padY                $var(spacing-100)                    widgetDefault
+        option add *Button.font                $comp_font                           widgetDefault
+
+        # Checkbutton / Radiobutton (classic): canvas surface, accent-filled
+        # indicator (selectColor) to mirror the Spectrum SVG indicators on
+        # the ttk equivalents.
+        foreach class {Checkbutton Radiobutton} {
+            option add *${class}.background         $var(background-base-color)            widgetDefault
+            option add *${class}.foreground         $var(body-color)                       widgetDefault
+            option add *${class}.activeBackground   $var(background-base-color)            widgetDefault
+            option add *${class}.activeForeground   $var(body-color)                       widgetDefault
+            option add *${class}.selectColor        $var(accent-background-color-default)  widgetDefault
+            option add *${class}.disabledForeground $var(disabled-content-color)           widgetDefault
+            option add *${class}.borderWidth        0                                      widgetDefault
+            option add *${class}.relief             flat                                   widgetDefault
+            option add *${class}.highlightThickness 0                                      widgetDefault
+            option add *${class}.font               $comp_font                             widgetDefault
+        }
+
+        # Entry / Spinbox (classic): in-set field (gray-50) with a 1px border.
+        foreach class {Entry Spinbox} {
+            option add *${class}.background         $fld_bg                       widgetDefault
+            option add *${class}.foreground         $var(body-color)              widgetDefault
+            option add *${class}.disabledBackground $var(disabled-background-color) widgetDefault
+            option add *${class}.disabledForeground $var(disabled-content-color)  widgetDefault
+            option add *${class}.insertBackground   $var(body-color)              widgetDefault
+            option add *${class}.selectBackground   $sel_bg                       widgetDefault
+            option add *${class}.selectForeground   $sel_fg                       widgetDefault
+            option add *${class}.relief             solid                         widgetDefault
+            option add *${class}.borderWidth        1                             widgetDefault
+            option add *${class}.highlightThickness 0                             widgetDefault
+            option add *${class}.font               $field_font                   widgetDefault
+        }
+        # Spinbox-specific: arrow buttons.
+        option add *Spinbox.buttonBackground   $var(gray-300)                widgetDefault
+
+        # Listbox: same field surface as Entry; popup-style border.
+        option add *Listbox.background         $fld_bg                       widgetDefault
+        option add *Listbox.foreground         $var(body-color)              widgetDefault
+        option add *Listbox.selectBackground   $sel_bg                       widgetDefault
+        option add *Listbox.selectForeground   $sel_fg                       widgetDefault
+        option add *Listbox.disabledForeground $var(disabled-content-color)  widgetDefault
+        option add *Listbox.relief             solid                         widgetDefault
+        option add *Listbox.borderWidth        1                             widgetDefault
+        option add *Listbox.highlightThickness 0                             widgetDefault
+        option add *Listbox.font               $field_font                   widgetDefault
+
+        # Scale (classic): trough + thumb mirror TScale.
+        option add *Scale.troughColor         $var(gray-300)                                                widgetDefault
+        option add *Scale.background          [expr {$var(darkmode) ? $var(gray-700) : $var(gray-800)}]    widgetDefault
+        option add *Scale.activeBackground    [expr {$var(darkmode) ? $var(gray-800) : $var(gray-900)}]    widgetDefault
+        option add *Scale.foreground          $var(body-color)                                              widgetDefault
+        option add *Scale.borderWidth         0                                                             widgetDefault
+        option add *Scale.sliderRelief        flat                                                          widgetDefault
+        option add *Scale.highlightThickness  0                                                             widgetDefault
+        option add *Scale.font                $comp_font                                                    widgetDefault
+
+        # Scrollbar (classic): legacy widget; ttk::scrollbar is preferred but
+        # cover it for completeness. Mirrors the SVG-driven ttk thumb steps.
+        option add *Scrollbar.troughColor      [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]   widgetDefault
+        option add *Scrollbar.background       [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]   widgetDefault
+        option add *Scrollbar.activeBackground [expr {$var(darkmode) ? $var(gray-700) : $var(gray-600)}]   widgetDefault
+        option add *Scrollbar.borderWidth      0                                                            widgetDefault
+        option add *Scrollbar.highlightThickness 0                                                          widgetDefault
+
+        # Menubutton (classic): matches TMenubutton.
+        option add *Menubutton.background         $var(gray-300)                       widgetDefault
+        option add *Menubutton.foreground         $var(neutral-content-color-default)  widgetDefault
+        option add *Menubutton.activeBackground   $var(gray-400)                       widgetDefault
+        option add *Menubutton.activeForeground   $var(neutral-content-color-default)  widgetDefault
+        option add *Menubutton.disabledForeground $var(disabled-content-color)         widgetDefault
+        option add *Menubutton.borderWidth        0                                    widgetDefault
+        option add *Menubutton.relief             flat                                 widgetDefault
+        option add *Menubutton.highlightThickness 0                                    widgetDefault
+        option add *Menubutton.padX               $var(spacing-200)                    widgetDefault
+        option add *Menubutton.padY               $var(spacing-100)                    widgetDefault
+        option add *Menubutton.font               $comp_font                           widgetDefault
+
+        # Canvas: drawing surface = canvas layer.
+        option add *Canvas.background            $var(background-base-color) widgetDefault
+        option add *Canvas.borderWidth           0                           widgetDefault
+        option add *Canvas.highlightThickness    0                           widgetDefault
+
+        # Text: long-form content on the canvas.
+        option add *Text.background              $var(background-base-color)                                  widgetDefault
+        option add *Text.foreground              $var(body-color)                                             widgetDefault
+        option add *Text.insertBackground        $var(body-color)                                             widgetDefault
+        option add *Text.selectBackground        $sel_bg                                                      widgetDefault
+        option add *Text.selectForeground        $sel_fg                                                      widgetDefault
+        option add *Text.relief                  flat                                                         widgetDefault
+        option add *Text.borderWidth             0                                                            widgetDefault
+        option add *Text.highlightThickness      0                                                            widgetDefault
+        option add *Text.font                    $comp_font                                                   widgetDefault
+
+        # Menu: popover surface (background-layer-2-color, gray border) per
+        # spectrum-css popover. Hover uses a subtle gray, not the OS highlight.
+        option add *Menu.background              $var(background-layer-2-color)        widgetDefault
+        option add *Menu.foreground              $var(neutral-content-color-default)   widgetDefault
+        option add *Menu.activeBackground        $hover_bg                             widgetDefault
+        option add *Menu.activeForeground        $var(neutral-content-color-default)   widgetDefault
+        option add *Menu.selectColor             $var(accent-background-color-default) widgetDefault
+        option add *Menu.disabledForeground      $var(disabled-content-color)          widgetDefault
+        option add *Menu.activeBorderWidth       0                                     widgetDefault
+        option add *Menu.borderWidth             0                                     widgetDefault
+        option add *Menu.relief                  flat                                  widgetDefault
+        option add *Menu.font                    $comp_font                            widgetDefault
+
+        # Combobox popup listbox: popover surface (matches Menu).
+        option add *TCombobox*Listbox.background        $var(background-layer-2-color)         widgetDefault
+        option add *TCombobox*Listbox.foreground        $var(neutral-content-color-default)    widgetDefault
+        option add *TCombobox*Listbox.selectBackground  $sel_bg                                widgetDefault
+        option add *TCombobox*Listbox.selectForeground  $sel_fg                                widgetDefault
+        option add *TCombobox*Listbox.borderWidth       0                                      widgetDefault
+        option add *TCombobox*Listbox.font              $field_font                            widgetDefault
+
+        # Catch-all for any classic widget we didn't enumerate.
+        option add *font $comp_font widgetDefault
+
+        # Re-apply options to existing widget instances. New widgets pick up
+        # the option db at creation; existing ones need an explicit reconfigure.
+        # The root window . always gets refreshed regardless of class — Tk
+        # gives it a class derived from the application name, which is never
+        # in our enumerated list.
+        set classic_classes {
+            Toplevel Frame Label Message Button
+            Checkbutton Radiobutton
+            Entry Spinbox Listbox
+            Scale Scrollbar
+            Menubutton Canvas Text Menu
+        }
         set widgets [list .]
         while {$widgets ne ""} {
             set widgets [lassign $widgets current]
-            switch [winfo class $current] {
-                Menu - Text { my RefreshWidget $current }
+            if {$current eq "." || [winfo class $current] in $classic_classes} {
+                my RefreshWidget $current
             }
             lappend widgets {*}[lreverse [winfo children $current]]
         }
     }
 
     method RefreshWidget {widget} {
+        # Re-pull theme defaults from the option database onto an existing
+        # widget. The list is the union of options touched by tk_setPalette
+        # and our class-specific option add calls. catch is intentional:
+        # any option that doesn't apply to the widget's class no-ops.
         set options {
-            background borderWidth foreground
-            relief
-            activeBackground activeBorderWidth activeForeground
-            activeRelief
-            selectBackground selectBorderWidth selectForeground
-            selectColor
+            activeBackground activeBorderWidth activeForeground activeRelief
+            background borderWidth buttonBackground
+            disabledBackground disabledForeground
+            font foreground
             highlightBackground highlightColor highlightThickness
-            insertBackground insertBorderWidth
-            insertWidth
-            disabledForeground font
+            insertBackground insertBorderWidth insertWidth
+            padX padY
+            relief
+            selectBackground selectBorderWidth selectColor selectForeground
+            sliderRelief
+            troughColor
         }
         foreach opt $options {
             set name [string tolower $opt]

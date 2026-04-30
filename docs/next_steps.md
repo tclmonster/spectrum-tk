@@ -26,29 +26,7 @@ In Tcl/Tk 9.x these bindings never fire — `<<ThemeChanged>>` is dispatched to 
 
 ## Phase 1 — Theme foundation: remaining work
 
-ttk coverage is **done**. Two pieces left:
-
-### Classic widget option database
-
-`refreshOptions` in `spectrum.tcl` currently configures only `Text`, `Menu`, and the combobox popup `Listbox` (via `RefreshCombobox`). Plus `tk_setPalette` covers some basics. To make non-ttk widgets visually consistent with the theme:
-
-| Classic widget | Option-database keys to set |
-| --- | --- |
-| `Toplevel` | `*Toplevel.background` |
-| `Frame` | `*Frame.background` |
-| `Label` | `*Label.background`, `*Label.foreground`, `*Label.font` |
-| `Button` | bg/fg/activeBackground/activeForeground/highlightThickness/font |
-| `Checkbutton`, `Radiobutton` | bg/fg/selectColor/activeBackground/font |
-| `Entry` | `*Entry.background`, `*Entry.foreground`, `*Entry.insertBackground`, `*Entry.relief`, `*Entry.borderWidth` |
-| `Listbox` | bg/fg/selectBackground/selectForeground/borderWidth/highlightThickness |
-| `Scrollbar` (classic) | troughColor/background/activeBackground (legacy widget; few apps still use it) |
-| `Scale` (classic) | troughColor/sliderRelief/font |
-| `Spinbox` (classic) | bg/fg/buttonBackground |
-| `Menubutton` (classic) | bg/fg/activeBackground/activeForeground |
-| `Message` | background/foreground/font |
-| `Canvas` | background/highlightThickness |
-
-The `RefreshWidget` helper at the bottom of `spectrum.tcl` already walks the widget tree and re-applies option values to existing instances — when expanding `refreshOptions`, also expand the `switch` in `refreshOptions` that selects which classes to call `RefreshWidget` on (currently only `Menu - Text`).
+ttk coverage is **done**. Classic widget option database is **done**. One piece left:
 
 ### RGBA token handling
 

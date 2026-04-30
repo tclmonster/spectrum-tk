@@ -41,6 +41,26 @@ package require spectrum
 spectrum::theme use
 ```
 
+## Spectrum 2 docs MCP server (recommended for AI assistants)
+
+`spectrum-design-data` ships an MCP server that exposes the hand-written
+Spectrum 2 design guidelines (component anatomy, states, behaviors, usage)
+to AI tools. It is the preferred entry point for component-level questions
+when working with Claude or another MCP-aware assistant — see
+`spectrum-design-data/docs/s2-docs/README.md`.
+
+To install and register it with Claude Code:
+
+```sh
+pushd spectrum-design-data/tools/s2-docs-mcp
+npm install
+popd
+claude mcp add s2-docs -- node "$(pwd)"/spectrum-design-data/tools/s2-docs-mcp/src/cli.js
+```
+
+The server provides `list-s2-components`, `get-s2-component`,
+`search-s2-docs`, `find-s2-component-by-use-case`, and `get-s2-stats`.
+
 ## Regenerating `spectrum-vars.tcl`
 
 The generated file is checked in, so you only need this when bumping the upstream design tokens.

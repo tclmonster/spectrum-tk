@@ -16,6 +16,8 @@ When you need to know something Spectrum-related, check these in this order. **D
 
 All four live as **git submodules** under the project root. Initialize them with `git submodule update --init --recursive`. They are reference-only — never imported at runtime; the generators read them and emit checked-in `.tcl` files.
 
+> **Preferred entry point: the `s2-docs` MCP server.** Before grepping through `spectrum-design-data/docs/`, query the `s2-docs` MCP tools (`mcp__s2-docs__list-s2-components`, `mcp__s2-docs__get-s2-component`, `mcp__s2-docs__search-s2-docs`, `mcp__s2-docs__find-s2-component-by-use-case`, `mcp__s2-docs__get-s2-stats`). Per `spectrum-design-data/docs/s2-docs/README.md` this is the recommended way to surface S2 documentation. It returns the same hand-written `s2-docs/` content as the files but pre-indexed for component lookup, category browsing, and full-text search. Fall back to direct file reads for anything outside the MCP's scope (token JSON, component schemas, spectrum-css). README.md has the setup command.
+
 ### 1. `spectrum-design-data/packages/tokens/src/*.json` — design tokens (source of truth)
 
 JSON files keyed by token name. Each token has:
@@ -44,8 +46,6 @@ The `spectrum-design-data` repository **also** contains:
   - Marked **DO NOT EDIT** upstream — read-only for us.
 - `packages/design-data-spec/spec/*.md` — the **normative specification** for token format, taxonomy, cascade, dimensions, manifest, diff, query, evolution. Read when designing the generators or working through token-resolution edge cases (e.g. `cascade.md`, `token-format.md`).
 - `packages/design-system-registry/` — registry-level metadata (component IDs, platform extensions); rarely needed for spectrum-tk.
-
-> Do not use the `spectrum-design-data` MCP — it returns `total: 0`. Read the submodule files directly.
 
 ### 2. `spectrum-css/components/<name>/` — reference implementations
 
@@ -86,7 +86,7 @@ Rough sequence when adding a Spectrum component or restyling a ttk class:
 
 1. **Identify tokens.** Find the relevant entries in `spectrum-design-data/packages/tokens/src/*.json` or in `::spectrum::var()`. Use them — never hardcode colors or sizes.
 2. **Read the schema.** Open `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json` for the canonical prop surface (variants, sizes, states, booleans). The same prop table also appears in `docs/markdown/components/<name>.md` if you prefer markdown.
-3. **Read the design guidelines.** Open the matching `docs/s2-docs/components/<category>/<name>.md` for anatomy, behaviors (keyboard focus, tooltip, cursor, transitions), usage guidance, and per-prop description. For cross-cutting design questions (focus ring spec, motion durations, icon sizing), read the relevant `docs/s2-docs/designing/*.md`.
+3. **Read the design guidelines.** Start with the `s2-docs` MCP (`mcp__s2-docs__get-s2-component`, `mcp__s2-docs__search-s2-docs`) for anatomy, behaviors (keyboard focus, tooltip, cursor, transitions), usage guidance, and per-prop description. Fall back to the matching `spectrum-design-data/docs/s2-docs/components/<category>/<name>.md` if the MCP is unavailable. For cross-cutting design questions (focus ring spec, motion durations, icon sizing), read the relevant `spectrum-design-data/docs/s2-docs/designing/*.md`.
 4. **Cross-check visuals.** Look at `spectrum-css/components/<name>/index.css` and `themes/spectrum-two.css` to see exactly which tokens map to which selectors and states.
 5. **Find the Tk primitive.** Open the relevant `tcltk/man/mann/*.n` to see what ttk gives you and what you need to extend with image elements / custom layouts.
 6. **Implement** in the right file (`spectrum.tcl` for theme work, `components/Foo.tcl` for concrete components — see [docs/architecture.md](docs/architecture.md)).

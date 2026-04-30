@@ -62,7 +62,7 @@ The command form is the idiomatic Tk style and composes directly with `pack`/`gr
 | Theme foundation: full ttk coverage (TButton + variants, TLabel, TFrame, TLabelframe, TEntry, TCombobox, TSpinbox, TMenubutton, TNotebook, TProgressbar, TScale, TCheckbutton, TRadiobutton, TPanedwindow, TSizegrip, Treeview, TScrollbar, TSeparator) | Implemented |
 | Theme foundation: SVG indicator elements for Checkbutton + Radiobutton with dark-mode redraw | Implemented |
 | Theme foundation: SVG element scrollbar (Win11-style, cross-platform) | Implemented |
-| Theme foundation: classic widget option database (full coverage) | In progress (Text, Menu, Combobox listbox done) |
+| Theme foundation: classic widget option database (Toplevel, Frame, Label, Message, Button, Checkbutton, Radiobutton, Entry, Spinbox, Listbox, Scale, Scrollbar, Menubutton, Canvas, Text, Menu) | Implemented |
 | SVG photo factory (`::spectrum::priv::svg_image`) | Implemented |
 | Concrete `spectrum::*` components | Planned |
 
