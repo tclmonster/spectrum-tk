@@ -268,6 +268,48 @@ proc ::spectrum::priv::scrollbar_arrow_svg {direction state} {
 </svg>}]
 }
 
+# Generate an SVG string for a Spectrum-styled progressbar trough.
+# A flat gray-200 rect — clam's built-in Progressbar element draws an
+# uncontrollable border using -bordercolor; replacing the element with an
+# image gives us a true flat fill. The 16-unit long axis gives 4+8+4 =
+# end-cap + stretchable middle + end-cap so a 9-slice -border [list 4 0]
+# (or [list 0 4] for vertical) preserves the rounded caps while the middle
+# stretches as a solid fill — same geometry idiom as scrollbar_thumb_svg.
+proc ::spectrum::priv::progressbar_trough_svg {orient} {
+    namespace upvar ::spectrum var var
+    set fill $var(gray-200)
+    if {$orient eq "vertical"} {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="8" height="16" viewBox="0 0 8 16">
+<rect width="8" height="16" rx="4" ry="4" fill="%FILL%"/>
+</svg>}
+    } else {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="8" viewBox="0 0 16 8">
+<rect width="16" height="8" rx="4" ry="4" fill="%FILL%"/>
+</svg>}
+    }
+    return [string map [list %FILL% $fill] $tpl]
+}
+
+# Generate an SVG string for a Spectrum-styled progressbar fill (pbar).
+# accent-color-900 is the per-component fill colour from
+# spectrum-css/components/progressbar/index.css; mode-shifted (blue-900
+# resolves to a brighter blue in dark mode for visibility).
+proc ::spectrum::priv::progressbar_pbar_svg {orient state} {
+    namespace upvar ::spectrum var var
+    set disabled [expr {"disabled" in $state}]
+    set fill [expr {$disabled ? $var(disabled-content-color) : $var(accent-color-900)}]
+    if {$orient eq "vertical"} {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="8" height="16" viewBox="0 0 8 16">
+<rect width="8" height="16" rx="4" ry="4" fill="%FILL%"/>
+</svg>}
+    } else {
+        set tpl {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="8" viewBox="0 0 16 8">
+<rect width="16" height="8" rx="4" ry="4" fill="%FILL%"/>
+</svg>}
+    }
+    return [string map [list %FILL% $fill] $tpl]
+}
+
 # Generate an SVG string for a Spectrum-styled radio indicator.
 proc ::spectrum::priv::radio_svg {state} {
     namespace upvar ::spectrum var var
@@ -329,10 +371,10 @@ proc ::spectrum::SetWindowColor {window color} {
     }
 
     proc ::spectrum::HexToBGR {color} {
-	if {[scan $color "#%2x%2x%2x" r g b] != 3} {
-	    return -code error "Invalid hex color format: $color"
-	}
-	return [expr {($b << 16) | ($g << 8) | $r}]
+        if {[scan $color "#%2x%2x%2x" r g b] != 3} {
+            return -code error "Invalid hex color format: $color"
+        }
+        return [expr {($b << 16) | ($g << 8) | $r}]
     }
 
     proc ::spectrum::SetWindowColor {window color} {
@@ -661,19 +703,71 @@ oo::class create ::spectrum::Theme {
 
     method RefreshProgressbar {} {
         namespace upvar ::spectrum var var
+
+        # clam's built-in Progressbar element draws an uncontrollable border
+        # using -bordercolor and shares -lightcolor/-darkcolor between trough
+        # and pbar (so we can't have a flat trough and a coloured fill at the
+        # same time). Replace both elements with image-based ones for true
+        # flat fills, mirroring the scrollbar pattern.
+        ::spectrum::priv::set_image ::spectrum::priv::pb_trough_h \
+            [::spectrum::priv::progressbar_trough_svg horizontal]
+        ::spectrum::priv::set_image ::spectrum::priv::pb_trough_v \
+            [::spectrum::priv::progressbar_trough_svg vertical]
+        ::spectrum::priv::set_image ::spectrum::priv::pb_pbar_h_def \
+            [::spectrum::priv::progressbar_pbar_svg horizontal {}]
+        ::spectrum::priv::set_image ::spectrum::priv::pb_pbar_h_dis \
+            [::spectrum::priv::progressbar_pbar_svg horizontal disabled]
+        ::spectrum::priv::set_image ::spectrum::priv::pb_pbar_v_def \
+            [::spectrum::priv::progressbar_pbar_svg vertical {}]
+        ::spectrum::priv::set_image ::spectrum::priv::pb_pbar_v_dis \
+            [::spectrum::priv::progressbar_pbar_svg vertical disabled]
+
         ttk::style theme settings spectrum {
+            if {"Spectrum.Hprogress.trough" ni [ttk::style element names]} {
+                # -border is in photo pixels, so scale with DPI to match the
+                # SVG's 9-slice geometry (4px caps in a 16×8 / 8×16 source).
+                set b4 [expr {int(round(4 * $::tk::scalingPct / 100.0))}]
+                # -padding {0 0} so the pbar packs into the full trough rect;
+                # the default would inherit -border and inset the pbar by 4px,
+                # leaving the trough's rounded corners visible behind the fill.
+                ttk::style element create Spectrum.Hprogress.trough image \
+                    ::spectrum::priv::pb_trough_h \
+                    -sticky nswe -border [list $b4 0] -padding {0 0}
+                ttk::style element create Spectrum.Vprogress.trough image \
+                    ::spectrum::priv::pb_trough_v \
+                    -sticky nswe -border [list 0 $b4] -padding {0 0}
+                ttk::style element create Spectrum.Hprogress.pbar image \
+                    [list ::spectrum::priv::pb_pbar_h_def \
+                        disabled ::spectrum::priv::pb_pbar_h_dis] \
+                    -sticky nswe -border [list $b4 0]
+                ttk::style element create Spectrum.Vprogress.pbar image \
+                    [list ::spectrum::priv::pb_pbar_v_def \
+                        disabled ::spectrum::priv::pb_pbar_v_dis] \
+                    -sticky nswe -border [list 0 $b4]
+            }
+
+            # pbar uses -sticky nswe (not clam's default ns/we) so the image
+            # element's 9-slice stretches the middle along the value axis;
+            # otherwise the pbar would render at its natural 16-px length.
+            ttk::style layout Horizontal.TProgressbar {
+                Spectrum.Hprogress.trough -sticky nswe -children {
+                    Spectrum.Hprogress.pbar -side left -sticky nswe
+                    Horizontal.Progressbar.ctext -side left -sticky {}
+                }
+            }
+            ttk::style layout Vertical.TProgressbar {
+                Spectrum.Vprogress.trough -sticky nswe -children {
+                    Spectrum.Vprogress.pbar -side bottom -sticky nswe
+                }
+            }
+
+            # Schema default size is m. spectrum-css/components/progressbar/
+            # index.css maps sizeM to progress-bar-thickness-large (8px) but
+            # carries an "@todo should this be --spectrum-progress-bar-
+            # thickness-medium?" comment; we follow the medium token (6px)
+            # which matches the size's semantic name.
             ttk::style configure TProgressbar \
-                -troughcolor $var(gray-300) \
-                -background  $var(accent-background-color-default) \
-                -bordercolor $var(gray-300) \
-                -lightcolor  $var(accent-background-color-default) \
-                -darkcolor   $var(accent-background-color-default) \
-                -borderwidth 0 \
-                -thickness   [::spectrum::scale_pixel 6]
-            ttk::style map TProgressbar \
-                -background [list disabled $var(disabled-content-color)] \
-                -lightcolor [list disabled $var(disabled-content-color)] \
-                -darkcolor  [list disabled $var(disabled-content-color)]
+                -thickness $var(progress-bar-thickness-medium)
         }
     }
 
