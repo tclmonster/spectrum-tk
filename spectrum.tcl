@@ -817,25 +817,25 @@ oo::class create ::spectrum::Theme {
 
     method RefreshTreeview {} {
         namespace upvar ::spectrum var var
-        set border       [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
-        set heading_bg   [expr {$var(darkmode) ? $var(gray-200) : $var(gray-75)}]
-        set heading_hov  [expr {$var(darkmode) ? $var(gray-300) : $var(gray-100)}]
-        set heading_pres [expr {$var(darkmode) ? $var(gray-400) : $var(gray-200)}]
+        set border       $var(gray-200)
+        set heading_bg   $var(background-layer-1-color)
+        set heading_hov  [expr {$var(darkmode) ? $var(gray-200) : $var(gray-100)}]
+        set heading_pres [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
         set hover_bg     $var(tree-view-row-background-hover)
         set sel_bg       $var(neutral-background-color-selected-default)
         set sel_fg       [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
 
         ttk::style theme settings spectrum {
             ttk::style configure Treeview \
-                -background      $var(gray-50) \
+                -background      $var(background-base-color) \
                 -foreground      $var(body-color) \
-                -fieldbackground $var(gray-50) \
+                -fieldbackground $var(background-base-color) \
                 -bordercolor     $border \
                 -lightcolor      $border \
                 -darkcolor       $border \
                 -borderwidth     1 \
                 -font            $var(component-m-regular) \
-                -rowheight       [::spectrum::scale_pixel 20]
+                -rowheight       $var(table-row-height-medium-regular)
             ttk::style map Treeview \
                 -background [list \
                     disabled            $var(disabled-background-color) \
@@ -854,7 +854,7 @@ oo::class create ::spectrum::Theme {
                 -borderwidth 1 \
                 -relief      flat \
                 -padding     [list $var(spacing-200) $var(spacing-100)] \
-                -font        $var(component-m-regular)
+                -font        $var(component-m-bold)
             ttk::style map Treeview.Heading \
                 -background [list \
                     disabled            $var(disabled-background-color) \
