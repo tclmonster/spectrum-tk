@@ -236,17 +236,22 @@ proc ::spectrum::priv::scrollbar_arrow_svg {direction state} {
     set pressed  [expr {"pressed"  in $state}]
     set disabled [expr {"disabled" in $state}]
 
+    # Arrow color tracks the thumb ramp from scrollbar_thumb_svg so the
+    # arrow buttons read as part of the same control rather than as a
+    # brighter accent.
     if {$disabled} {
         set arrow $var(disabled-content-color)
         set bg [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
     } else {
-        set arrow $var(body-color)
         if {$pressed} {
-            set bg [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
+            set arrow [expr {$var(darkmode) ? $var(gray-800) : $var(gray-700)}]
+            set bg    [expr {$var(darkmode) ? $var(gray-500) : $var(gray-400)}]
         } elseif {$hover} {
-            set bg [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+            set arrow [expr {$var(darkmode) ? $var(gray-700) : $var(gray-600)}]
+            set bg    [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
         } else {
-            set bg [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
+            set arrow [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]
+            set bg    [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]
         }
     }
 
