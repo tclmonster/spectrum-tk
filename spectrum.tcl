@@ -421,7 +421,9 @@ oo::class create ::spectrum::Theme {
         my RefreshSizegrip
         my RefreshTreeview
 
-        ttk::style configure TSeparator -background $var(gray-300)
+        # Spectrum 2 divider color per spectrum-css/components/divider/
+        # themes/spectrum-two.css: gray-200.
+        ttk::style configure TSeparator -background $var(gray-200)
     }
 
     method RefreshLabel {} {
@@ -656,13 +658,17 @@ oo::class create ::spectrum::Theme {
 
     method RefreshScale {} {
         namespace upvar ::spectrum var var
+        set trough       $var(gray-300)
         set thumb        [expr {$var(darkmode) ? $var(gray-700) : $var(gray-800)}]
         set thumb_hover  [expr {$var(darkmode) ? $var(gray-800) : $var(gray-900)}]
+        # -bordercolor is the trough's outline in clam; matching it to the
+        # trough fill makes the outline invisible. The slider's 3D edges
+        # come from -lightcolor/-darkcolor below.
         ttk::style theme settings spectrum {
             ttk::style configure TScale \
-                -troughcolor $var(gray-300) \
+                -troughcolor $trough \
                 -background  $thumb \
-                -bordercolor $thumb \
+                -bordercolor $trough \
                 -lightcolor  $thumb \
                 -darkcolor   $thumb \
                 -borderwidth 0
@@ -781,7 +787,9 @@ oo::class create ::spectrum::Theme {
 
     method RefreshPanedwindow {} {
         namespace upvar ::spectrum var var
-        set sash [expr {$var(darkmode) ? $var(gray-400) : $var(gray-300)}]
+        # The sash is the visible divider between panes — gray-200 per
+        # Spectrum 2 divider conventions.
+        set sash $var(gray-200)
         ttk::style theme settings spectrum {
             ttk::style configure TPanedwindow -background $var(background-base-color)
             ttk::style configure Sash \
@@ -931,19 +939,94 @@ oo::class create ::spectrum::Theme {
 
     method RefreshButton {} {
         namespace upvar ::spectrum var var
+        # Default TButton matches spectrum-css's "neutral" button (the
+        # unmodified .spectrum-Button) per spectrum-css/components/button/
+        # themes/spectrum-two.css: subtle gray-50 fill with a 1px border
+        # that ramps gray-400 → gray-500 hover → gray-600 down. Disabled
+        # uses transparent fill + disabled-border-color.
         ttk::style theme settings spectrum {
-            ttk::style configure TButton -background $var(gray-300) -foreground $var(neutral-content-color-default)
-            ttk::style map TButton -background [list {hover !disabled} $var(gray-400)]
+            ttk::style configure TButton \
+                -background  $var(gray-50) \
+                -foreground  $var(neutral-content-color-default) \
+                -bordercolor $var(gray-400) \
+                -lightcolor  $var(gray-50) \
+                -darkcolor   $var(gray-50) \
+                -borderwidth 1 \
+                -relief      solid \
+                -padding     [list $var(spacing-200) $var(spacing-100)]
+            ttk::style map TButton \
+                -background  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(gray-200) \
+                    {hover !disabled}   $var(gray-100)] \
+                -foreground  [list disabled $var(disabled-content-color)] \
+                -bordercolor [list \
+                    disabled            $var(disabled-border-color) \
+                    {pressed !disabled} $var(gray-600) \
+                    {hover !disabled}   $var(gray-500)] \
+                -lightcolor  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(gray-200) \
+                    {hover !disabled}   $var(gray-100)] \
+                -darkcolor   [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(gray-200) \
+                    {hover !disabled}   $var(gray-100)]
 
-            # neutral-background-color-default is gray-800 in both modes —
-            # dark in light mode, light in dark mode. The label needs the
-            # inverse for contrast.
-            set primary_fg [expr {$var(darkmode) ? $var(gray-25) : $var(white)}]
-            ttk::style configure Primary.TButton -background $var(neutral-background-color-default) -foreground $primary_fg
-            ttk::style map Primary.TButton -background [list {hover !disabled} $var(neutral-background-color-hover)]
+            # Primary variant (filled, dark in light / light in dark). Spectrum
+            # 2 sets content to gray-25 in both modes; gray-25 inverts per
+            # mode, giving white-on-dark in light and dark-on-light in dark.
+            ttk::style configure Primary.TButton \
+                -background  $var(neutral-background-color-default) \
+                -foreground  $var(gray-25) \
+                -bordercolor $var(neutral-background-color-default) \
+                -lightcolor  $var(neutral-background-color-default) \
+                -darkcolor   $var(neutral-background-color-default)
+            ttk::style map Primary.TButton \
+                -background  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(neutral-background-color-down) \
+                    {hover !disabled}   $var(neutral-background-color-hover)] \
+                -bordercolor [list \
+                    disabled            $var(disabled-border-color) \
+                    {pressed !disabled} $var(neutral-background-color-down) \
+                    {hover !disabled}   $var(neutral-background-color-hover)] \
+                -lightcolor  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(neutral-background-color-down) \
+                    {hover !disabled}   $var(neutral-background-color-hover)] \
+                -darkcolor   [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(neutral-background-color-down) \
+                    {hover !disabled}   $var(neutral-background-color-hover)] \
+                -foreground  [list disabled $var(disabled-content-color)]
 
-            ttk::style configure Accent.TButton -background $var(accent-background-color-default) -foreground $var(white)
-            ttk::style map Accent.TButton -background [list {hover !disabled} $var(accent-background-color-hover)]
+            # Accent variant (saturated blue in both modes). White content
+            # works in both modes since the accent is dark enough.
+            ttk::style configure Accent.TButton \
+                -background  $var(accent-background-color-default) \
+                -foreground  $var(white) \
+                -bordercolor $var(accent-background-color-default) \
+                -lightcolor  $var(accent-background-color-default) \
+                -darkcolor   $var(accent-background-color-default)
+            ttk::style map Accent.TButton \
+                -background  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(accent-background-color-down) \
+                    {hover !disabled}   $var(accent-background-color-hover)] \
+                -bordercolor [list \
+                    disabled            $var(disabled-border-color) \
+                    {pressed !disabled} $var(accent-background-color-down) \
+                    {hover !disabled}   $var(accent-background-color-hover)] \
+                -lightcolor  [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(accent-background-color-down) \
+                    {hover !disabled}   $var(accent-background-color-hover)] \
+                -darkcolor   [list \
+                    disabled            $var(disabled-background-color) \
+                    {pressed !disabled} $var(accent-background-color-down) \
+                    {hover !disabled}   $var(accent-background-color-hover)] \
+                -foreground  [list disabled $var(disabled-content-color)]
         }
     }
 
@@ -990,9 +1073,18 @@ oo::class create ::spectrum::Theme {
         option add *insertBackground    $var(body-color)              widgetDefault
         option add *troughColor         $var(gray-300)                widgetDefault
 
-        # Toplevel + Frame: canvas surface.
+        # Toplevel + Frame + Labelframe: canvas surface.
         option add *Toplevel.background    $var(background-base-color) widgetDefault
         option add *Frame.background       $var(background-base-color) widgetDefault
+        # Classic Labelframe doesn't expose a -bordercolor option; the border
+        # is drawn from a darker shade derived from -background. solid relief
+        # at 1px gives the closest match to the ttk TLabelframe styling.
+        option add *Labelframe.background      $var(background-base-color)  widgetDefault
+        option add *Labelframe.foreground      $var(body-color)             widgetDefault
+        option add *Labelframe.font            $comp_font                   widgetDefault
+        option add *Labelframe.relief          solid                        widgetDefault
+        option add *Labelframe.borderWidth     1                            widgetDefault
+        option add *Labelframe.highlightThickness 0                         widgetDefault
 
         # Label / Message: body text on canvas.
         option add *Label.background       $var(background-base-color) widgetDefault
@@ -1059,15 +1151,20 @@ oo::class create ::spectrum::Theme {
         option add *Listbox.highlightThickness 0                             widgetDefault
         option add *Listbox.font               $field_font                   widgetDefault
 
-        # Scale (classic): trough + thumb mirror TScale.
-        option add *Scale.troughColor         $var(gray-300)                                                widgetDefault
-        option add *Scale.background          [expr {$var(darkmode) ? $var(gray-700) : $var(gray-800)}]    widgetDefault
-        option add *Scale.activeBackground    [expr {$var(darkmode) ? $var(gray-800) : $var(gray-900)}]    widgetDefault
-        option add *Scale.foreground          $var(body-color)                                              widgetDefault
-        option add *Scale.borderWidth         0                                                             widgetDefault
-        option add *Scale.sliderRelief        flat                                                          widgetDefault
-        option add *Scale.highlightThickness  0                                                             widgetDefault
-        option add *Scale.font                $comp_font                                                    widgetDefault
+        # Scale (classic): the value text is drawn on the widget's general
+        # surface using -foreground, which is body-color (gray-800). If we
+        # set -background to the slider color (also gray-800), the text and
+        # the surface end up the same color and the value is invisible.
+        # Instead let -background inherit the global *background (page) so
+        # text shows in body-color on the page surface, and let the slider
+        # use -sliderRelief raised to draw 3D edges around the page-colored
+        # rectangle so the slider remains visible against the trough.
+        option add *Scale.troughColor         $var(gray-300)              widgetDefault
+        option add *Scale.foreground          $var(body-color)            widgetDefault
+        option add *Scale.borderWidth         0                           widgetDefault
+        option add *Scale.sliderRelief        raised                      widgetDefault
+        option add *Scale.highlightThickness  0                           widgetDefault
+        option add *Scale.font                $comp_font                  widgetDefault
 
         # Scrollbar (classic): legacy widget; ttk::scrollbar is preferred but
         # cover it for completeness. Mirrors the SVG-driven ttk thumb steps.
@@ -1136,7 +1233,7 @@ oo::class create ::spectrum::Theme {
         # gives it a class derived from the application name, which is never
         # in our enumerated list.
         set classic_classes {
-            Toplevel Frame Label Message Button
+            Toplevel Frame Labelframe Label Message Button
             Checkbutton Radiobutton
             Entry Spinbox Listbox
             Scale Scrollbar
