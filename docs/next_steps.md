@@ -26,7 +26,32 @@ In Tcl/Tk 9.x these bindings never fire — `<<ThemeChanged>>` is dispatched to 
 
 ## Phase 1 — Theme foundation: remaining work
 
-ttk coverage is **done**. Classic widget option database is **done**. One piece left:
+ttk coverage is **done**. Classic widget option database is **done**. Two pieces left:
+
+### Spectrum 2 token audit per ttk class
+
+Initial styling for every ttk class is in place, but each class needs to be cross-checked against `spectrum-css/components/<name>/themes/spectrum-two.css` (with the `index.css` base for non-overridden values) to confirm token choices match Spectrum 2. The s2-docs MCP is the preferred entry point for behavioural specs (cursor, focus, transition); CSS files are the spec for color and density. The `s2-docs/components/` markdown is a fallback when the MCP returns nothing.
+
+**Audited and aligned:**
+
+- TButton (default / Primary / Accent ramps) — vs `button/`
+- TEntry, TSpinbox, TCombobox (field bg, borders, selection fg) — vs `textfield/`, `picker/`
+- TSeparator, TPanedwindow Sash — vs `divider/`
+- TScrollbar thumb + arrow — vs `scrollbar/`
+- Treeview (body, heading, border, row height, heading bold font) — vs `table/`, `treeview/`
+
+**Not yet audited:**
+
+- TLabel, TFrame, TLabelframe
+- TMenubutton — vs `picker/` or `actionbutton/`
+- TNotebook — vs `tabs/`
+- TProgressbar — vs `progressbar/`
+- TScale — vs `slider/` (only kitchen-sink visibility fix has landed; not a full audit)
+- TCheckbutton, TRadiobutton — SVG indicators are in place; label / spacing / disabled-content colors not formally cross-checked vs `checkbox/`, `radio/`
+- TSizegrip — has no Spectrum equivalent; verify it sits unobtrusively on `background-base-color`
+- TScrollbar track + chevron stroke — partially done (thumb + arrow ramp); verify track fill and arrow stroke against `scrollbar/`
+
+Pattern: for each class, read the matching `spectrum-css/components/<name>/themes/spectrum-two.css` (and `index.css` for the base), tabulate current vs Spectrum 2, propose the diff, smoke + visually verify in `kitchen-sink.tcl`, then commit with a focused message naming the source CSS files. See the recent `Align Treeview with Spectrum 2 ...` commit as a template.
 
 ### RGBA token handling
 

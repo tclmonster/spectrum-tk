@@ -4,6 +4,8 @@
 
 A Ttk theme for Tcl/Tk that follows [Adobe's Spectrum 2](https://spectrum.adobe.com/) design system.
 
+> **Spectrum 2, not Spectrum 1.** spectrum-tk targets the current Spectrum 2 (S2) era exclusively. Token values, component prop surfaces, and visual specs come from S2 sources — `spectrum-css/components/<name>/themes/spectrum-two.css`, the `spectrum-design-data` token JSON, and `docs/s2-docs/`. The legacy Spectrum 1 layer (`themes/spectrum.css`, `@react-spectrum/v3`) is not a reference.
+
 The theme consumes Adobe's design tokens (vendored as a git submodule from [`spectrum-design-data`](https://github.com/adobe/spectrum-design-data)) and converts them into Tcl variables that drive a Ttk theme implementation. It targets **Tcl/Tk 9.x**, which provides built-in SVG support — useful for Spectrum's icon and illustration set.
 
 ## Repository Layout

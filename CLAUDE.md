@@ -6,6 +6,8 @@ This file is the front door. It tells you what the project is, where authoritati
 
 A Ttk theme **and** a component library for **Tcl/Tk 9.x** that re-skins the standard widget set in [Adobe Spectrum 2](https://spectrum.adobe.com/) and adds the Spectrum components Tk doesn't have. The design system is the source of truth — names, variants, prop names, and visual specs mirror Adobe's terminology. Do not Tcl-ify them.
 
+**Spectrum 2 — not Spectrum 1.** spectrum-tk targets Spectrum 2 (S2) exclusively. The submodules and reference files often contain both eras side by side (e.g. `spectrum-css` ships `themes/spectrum.css` for Spectrum 1 and `themes/spectrum-two.css` for Spectrum 2; older `@react-spectrum/v3` predates S2). Always read the S2 sources — `themes/spectrum-two.css`, `docs/s2-docs/`, the `spectrum-design-data` token JSON (which is S2-native). Ignore Spectrum 1 references unless explicitly cross-checking what changed.
+
 Required runtime: **Tcl/Tk 9.x** (for `oo::configurable`, `oo::abstract`, and built-in SVG via `$::tk::svgFmt`).
 
 For the layered architecture (theme foundation → OO infrastructure → concrete components), the file layout, and the generation pipeline, read [docs/architecture.md](docs/architecture.md). For phase-by-phase status, the same file's component table is the live reference.
@@ -51,7 +53,7 @@ The `spectrum-design-data` repository **also** contains:
 
 Adobe's Spectrum 2 components implemented in plain CSS. Use it to **cross-check our implementation** — what tokens go where, what selectors react to what state, what the visual primitives are.
 
-Each component is a directory: `index.css` (token wiring + selectors), `themes/spectrum-two.css` (concrete token values for Spectrum 2), `stories/`, `dist/`, `package.json`. Component directory names are lowercase Spectrum names (`button`, `actionbutton`, `alertbanner`, `combobox`, ...). Note: directory names drop hyphens — the schema's `action-button.json` corresponds to `actionbutton/`.
+Each component is a directory: `index.css` (token wiring + selectors, with Spectrum 1 defaults), `themes/spectrum-two.css` (the Spectrum 2 override layer — token values that supersede the index.css defaults), `themes/spectrum.css` (Spectrum 1 — **ignore unless reasoning about what S2 changed**), `stories/`, `dist/`, `package.json`. The effective S2 value for a token is the `themes/spectrum-two.css` override if present, otherwise the `index.css` default. Component directory names are lowercase Spectrum names (`button`, `actionbutton`, `alertbanner`, `combobox`, ...). Note: directory names drop hyphens — the schema's `action-button.json` corresponds to `actionbutton/`.
 
 Why prefer this over a React implementation: spectrum-css is **declarative** — selectors map directly to states (`:hover`, `[disabled]`, `.is-pressed`), tokens are CSS custom properties resolved literally, no JSX behavioural layer to mentally peel off. We may revisit `@react-spectrum/s2` later for behaviour specs not encoded in CSS, but for now spectrum-css is the cross-check.
 
@@ -102,6 +104,7 @@ For visual inspection, run `kitchen-sink.tcl` directly in `tclkit` — it shows 
 
 ## Conventions
 
+- **Spectrum 2, never Spectrum 1.** Tokens, components, prop names, visual specs all come from S2 sources. When a reference file has both eras, read the S2 layer (`themes/spectrum-two.css`, `docs/s2-docs/`).
 - **Spectrum terminology, never Tk terminology.** Use *component*, *variant*, etc. — not *widget*, *megawidget*. Concrete component file names match Spectrum's PascalCase verbatim (`Button.tcl`, `IllustratedMessage.tcl`).
 - **Tokens, not literals.** `$::spectrum::var(gray-100)`, not `#E9E9E9`.
 - **Docs are kept current.** Whenever a chunk lands, update `docs/architecture.md` and `docs/user_guide.md` so they describe what shipped — not what was planned.
