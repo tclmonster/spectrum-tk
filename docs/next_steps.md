@@ -41,12 +41,12 @@ Initial styling for every ttk class is in place, but each class needs to be cros
 - Treeview (body, heading, border, row height, heading bold font) — vs `table/`, `treeview/`
 - TNotebook (tab text neutral-subdued ramp, gray-200 divider) — vs `tabs/`. Faithful selection-indicator stripe deferred (see Polish opportunities below).
 - TProgressbar (track gray-200, fill accent-color-900, thickness `progress-bar-thickness-medium`, rounded ends via `corner-radius-100` 9-slice image elements) — vs `progressbar/`.
+- TScale (2px pill trough gray-200, 16px circle handle with gray-700/800 border ramp and background-base-color fill; SVG image elements for trough + handle) — vs `slider/`.
 
 **Not yet audited:**
 
 - TLabel, TFrame, TLabelframe
 - TMenubutton — vs `picker/` or `actionbutton/`
-- TScale — vs `slider/` (only kitchen-sink visibility fix has landed; not a full audit)
 - TCheckbutton, TRadiobutton — SVG indicators are in place; label / spacing / disabled-content colors not formally cross-checked vs `checkbox/`, `radio/`
 - TSizegrip — has no Spectrum equivalent; verify it sits unobtrusively on `background-base-color`
 - TScrollbar track + chevron stroke — partially done (thumb + arrow ramp); verify track fill and arrow stroke against `scrollbar/`

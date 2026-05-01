@@ -310,6 +310,59 @@ proc ::spectrum::priv::progressbar_pbar_svg {orient state} {
     return [string map [list %FILL% $fill] $tpl]
 }
 
+# Spectrum 2 slider trough: a thin 2px pill track.
+# The SVG is only as tall as the track (4px canvas with the 2px rect
+# centered); the image element uses -sticky we / ns so it stretches
+# along the slider axis but stays thin on the cross axis. The handle
+# (child element) is taller and determines the widget's overall size;
+# the thin track just sits centered behind it.
+# 9-slice: -border [2 0] (horizontal) / [0 2] (vertical) preserves the
+# rx=1 rounded end-caps while the middle stretches.
+# Cross-ref: spectrum-css/components/slider/themes/spectrum-two.css
+#   --spectrum-slider-track-color: gray-200
+#   --spectrum-slider-track-corner-radius: 2px
+proc ::spectrum::priv::slider_trough_svg {orient state} {
+    namespace upvar ::spectrum var var
+    set disabled [expr {"disabled" in $state}]
+    set fill [expr {$disabled ? $var(disabled-background-color) : $var(gray-200)}]
+    if {$orient eq "vertical"} {
+        return [string map [list %FILL% $fill] {<svg xmlns="http://www.w3.org/2000/svg" width="4" height="16" viewBox="0 0 4 16">
+<rect x="0" y="0" width="4" height="16" rx="2" ry="2" fill="%FILL%"/>
+</svg>}]
+    } else {
+        return [string map [list %FILL% $fill] {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="4" viewBox="0 0 16 4">
+<rect x="0" y="0" width="16" height="4" rx="2" ry="2" fill="%FILL%"/>
+</svg>}]
+    }
+}
+
+# Spectrum 2 slider handle: a 16×16 circle with 2px border. The CSS sets
+# background: transparent, which visually resolves to the page surface
+# behind the handle. We fill with background-base-color to match.
+# Cross-ref: spectrum-css/components/slider/themes/spectrum-two.css
+#   handle-border-color: gray-700, handle-border-color-hover: gray-800
+#   handle-background-color: transparent (→ page surface)
+#   handle-disabled-background-color: gray-75
+#   handle-border-radius: corner-radius-500 (8px → circle at 16px handle)
+proc ::spectrum::priv::slider_handle_svg {state} {
+    namespace upvar ::spectrum var var
+    set hover    [expr {"active"   in $state}]
+    set disabled [expr {"disabled" in $state}]
+    if {$disabled} {
+        set border $var(disabled-border-color)
+        set fill   $var(gray-75)
+    } elseif {$hover} {
+        set border $var(gray-800)
+        set fill   $var(background-base-color)
+    } else {
+        set border $var(gray-700)
+        set fill   $var(background-base-color)
+    }
+    return [string map [list %FILL% $fill %BORDER% $border] {<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<circle cx="8" cy="8" r="7" fill="%FILL%" stroke="%BORDER%" stroke-width="2"/>
+</svg>}]
+}
+
 # Generate an SVG string for a Spectrum-styled radio indicator.
 proc ::spectrum::priv::radio_svg {state} {
     namespace upvar ::spectrum var var
@@ -773,30 +826,50 @@ oo::class create ::spectrum::Theme {
 
     method RefreshScale {} {
         namespace upvar ::spectrum var var
-        set trough       $var(gray-300)
-        set thumb        [expr {$var(darkmode) ? $var(gray-700) : $var(gray-800)}]
-        set thumb_hover  [expr {$var(darkmode) ? $var(gray-800) : $var(gray-900)}]
-        # -bordercolor is the trough's outline in clam; matching it to the
-        # trough fill makes the outline invisible. The slider's 3D edges
-        # come from -lightcolor/-darkcolor below.
+
+        foreach orient {horizontal vertical} {
+            set short [string index $orient 0]
+            foreach {key state} {default {} dis disabled} {
+                ::spectrum::priv::set_image ::spectrum::priv::sc_trough_${short}_${key} \
+                    [::spectrum::priv::slider_trough_svg $orient $state]
+            }
+        }
+
+        foreach {key state} {default {} hov {active} dis {disabled}} {
+            ::spectrum::priv::set_image ::spectrum::priv::sc_handle_${key} \
+                [::spectrum::priv::slider_handle_svg $state]
+        }
+
         ttk::style theme settings spectrum {
-            ttk::style configure TScale \
-                -troughcolor $trough \
-                -background  $thumb \
-                -bordercolor $trough \
-                -lightcolor  $thumb \
-                -darkcolor   $thumb \
-                -borderwidth 0
-            ttk::style map TScale \
-                -background [list \
-                    disabled           $var(disabled-content-color) \
-                    {active !disabled} $thumb_hover] \
-                -lightcolor [list \
-                    disabled           $var(disabled-content-color) \
-                    {active !disabled} $thumb_hover] \
-                -darkcolor  [list \
-                    disabled           $var(disabled-content-color) \
-                    {active !disabled} $thumb_hover]
+            if {"Spectrum.Hscale.trough" ni [ttk::style element names]} {
+                set b2 [expr {int(round(2 * $::tk::scalingPct / 100.0))}]
+
+                ttk::style element create Spectrum.Hscale.trough image \
+                    [list ::spectrum::priv::sc_trough_h_default \
+                        disabled ::spectrum::priv::sc_trough_h_dis] \
+                    -sticky we -border [list $b2 0] -padding {0 0}
+                ttk::style element create Spectrum.Vscale.trough image \
+                    [list ::spectrum::priv::sc_trough_v_default \
+                        disabled ::spectrum::priv::sc_trough_v_dis] \
+                    -sticky ns -border [list 0 $b2] -padding {0 0}
+
+                ttk::style element create Spectrum.Scale.slider image \
+                    [list ::spectrum::priv::sc_handle_default \
+                        disabled ::spectrum::priv::sc_handle_dis \
+                        active   ::spectrum::priv::sc_handle_hov] \
+                    -sticky {}
+            }
+
+            ttk::style layout Horizontal.TScale {
+                Spectrum.Hscale.trough -sticky nswe -children {
+                    Spectrum.Scale.slider -side left -sticky {}
+                }
+            }
+            ttk::style layout Vertical.TScale {
+                Spectrum.Vscale.trough -sticky nswe -children {
+                    Spectrum.Scale.slider -side top -sticky {}
+                }
+            }
         }
     }
 
@@ -1266,17 +1339,15 @@ oo::class create ::spectrum::Theme {
         option add *Listbox.highlightThickness 0                             widgetDefault
         option add *Listbox.font               $field_font                   widgetDefault
 
-        # Scale (classic): the value text is drawn on the widget's general
-        # surface using -foreground, which is body-color (gray-800). If we
-        # set -background to the slider color (also gray-800), the text and
-        # the surface end up the same color and the value is invisible.
-        # Instead let -background inherit the global *background (page) so
-        # text shows in body-color on the page surface, and let the slider
-        # use -sliderRelief raised to draw 3D edges around the page-colored
-        # rectangle so the slider remains visible against the trough.
-        option add *Scale.troughColor         $var(gray-300)              widgetDefault
+        # Scale (classic): -background paints both the slider rect AND the
+        # surface behind the value text, so it stays as the page color
+        # (inherited from *background). sliderRelief solid gives a flat
+        # outline (no 3D) matching the ttk handle's border look.
+        option add *Scale.activeBackground    $var(background-base-color) widgetDefault
+        option add *Scale.troughColor         $var(gray-200)              widgetDefault
         option add *Scale.foreground          $var(body-color)            widgetDefault
         option add *Scale.borderWidth         0                           widgetDefault
+        option add *Scale.relief              flat                        widgetDefault
         option add *Scale.sliderRelief        raised                      widgetDefault
         option add *Scale.highlightThickness  0                           widgetDefault
         option add *Scale.font                $comp_font                  widgetDefault
@@ -1286,8 +1357,8 @@ oo::class create ::spectrum::Theme {
         option add *Scrollbar.troughColor      [expr {$var(darkmode) ? $var(gray-300) : $var(gray-200)}]   widgetDefault
         option add *Scrollbar.background       [expr {$var(darkmode) ? $var(gray-600) : $var(gray-500)}]   widgetDefault
         option add *Scrollbar.activeBackground [expr {$var(darkmode) ? $var(gray-700) : $var(gray-600)}]   widgetDefault
-        option add *Scrollbar.borderWidth      0                                                            widgetDefault
-        option add *Scrollbar.highlightThickness 0                                                          widgetDefault
+        option add *Scrollbar.borderWidth        0                                                         widgetDefault
+        option add *Scrollbar.highlightThickness 0                                                         widgetDefault
 
         # Menubutton (classic): matches TMenubutton.
         option add *Menubutton.background         $var(gray-300)                       widgetDefault

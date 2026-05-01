@@ -36,7 +36,7 @@ The same data is already exposed at runtime via `::spectrum::var(token-name)` (s
 
 The `spectrum-design-data` repository **also** contains:
 
-- `packages/component-schemas/schemas/components/*.json` — **per-component prop schemas** (variants, sizes, states, booleans). 80 components. This is the canonical surface for Phase-2 token classes and Phase-3 component constructors. Each file has `properties.<prop>.enum` / `default` for variants, `meta.category` and `meta.documentationUrl` for grouping.
+- `packages/component-schemas/schemas/components/*.json` — **per-component prop schemas** (variants, sizes, states, booleans). 80 components. **This is the source of truth for a component's prop surface, states, and visual structure** — it is always more current than `spectrum-css`. Read the schema *before* consulting the CSS; when the two disagree, the schema wins. Each file has `properties.<prop>.enum` / `default` for variants, `meta.category` and `meta.documentationUrl` for grouping.
 - `docs/s2-docs/` — Adobe's **hand-written Spectrum 2 design guidelines** in markdown. The most useful directory for porting work:
   - `fundamentals/{introduction,principles,home}.md` — Spectrum 2 intro and design principles.
   - `designing/*.md` — design language fundamentals: `colors`, `grays`, `typography-fundamentals`, `fonts`, `spacing`, `motion`, `states`, `attention-hierarchy`, `icon-fundamentals`, `using-icons`, `illustrations`, `object-styles`, `containers`, `background-layers`, `brand`, plus the `app-frame-*` files. Read these for spec-level details that schemas don't capture (e.g. motion durations, focus ring offset, icon sizing rules).
@@ -49,13 +49,13 @@ The `spectrum-design-data` repository **also** contains:
 - `packages/design-data-spec/spec/*.md` — the **normative specification** for token format, taxonomy, cascade, dimensions, manifest, diff, query, evolution. Read when designing the generators or working through token-resolution edge cases (e.g. `cascade.md`, `token-format.md`).
 - `packages/design-system-registry/` — registry-level metadata (component IDs, platform extensions); rarely needed for spectrum-tk.
 
-### 2. `spectrum-css/components/<name>/` — reference implementations
+### 2. `spectrum-css/components/<name>/` — CSS cross-check (secondary to schema)
 
-Adobe's Spectrum 2 components implemented in plain CSS. Use it to **cross-check our implementation** — what tokens go where, what selectors react to what state, what the visual primitives are.
+Adobe's Spectrum 2 components implemented in plain CSS. Use it to **cross-check** token-to-selector wiring and visual primitives — but **always read the component schema first**. The CSS repo may lag behind `spectrum-design-data`; when they disagree, trust the schema and tokens.
 
 Each component is a directory: `index.css` (token wiring + selectors, with Spectrum 1 defaults), `themes/spectrum-two.css` (the Spectrum 2 override layer — token values that supersede the index.css defaults), `themes/spectrum.css` (Spectrum 1 — **ignore unless reasoning about what S2 changed**), `stories/`, `dist/`, `package.json`. The effective S2 value for a token is the `themes/spectrum-two.css` override if present, otherwise the `index.css` default. Component directory names are lowercase Spectrum names (`button`, `actionbutton`, `alertbanner`, `combobox`, ...). Note: directory names drop hyphens — the schema's `action-button.json` corresponds to `actionbutton/`.
 
-Why prefer this over a React implementation: spectrum-css is **declarative** — selectors map directly to states (`:hover`, `[disabled]`, `.is-pressed`), tokens are CSS custom properties resolved literally, no JSX behavioural layer to mentally peel off. We may revisit `@react-spectrum/s2` later for behaviour specs not encoded in CSS, but for now spectrum-css is the cross-check.
+Why prefer this over a React implementation: spectrum-css is **declarative** — selectors map directly to states (`:hover`, `[disabled]`, `.is-pressed`), tokens are CSS custom properties resolved literally, no JSX behavioural layer to mentally peel off.
 
 ### 3. `spectrum-css-workflow-icons/icons/assets/` — workflow icons
 
@@ -87,9 +87,9 @@ When porting a Spectrum component, the typical question is: "what ttk element / 
 Rough sequence when adding a Spectrum component or restyling a ttk class:
 
 1. **Identify tokens.** Find the relevant entries in `spectrum-design-data/packages/tokens/src/*.json` or in `::spectrum::var()`. Use them — never hardcode colors or sizes.
-2. **Read the schema.** Open `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json` for the canonical prop surface (variants, sizes, states, booleans). The same prop table also appears in `docs/markdown/components/<name>.md` if you prefer markdown.
+2. **Read the schema (source of truth).** Open `spectrum-design-data/packages/component-schemas/schemas/components/<name>.json` for the canonical prop surface (variants, sizes, states, booleans). The schema is authoritative — it defines what the component *is*. The same prop table also appears in `docs/markdown/components/<name>.md` if you prefer markdown.
 3. **Read the design guidelines.** Start with the `s2-docs` MCP (`mcp__s2-docs__get-s2-component`, `mcp__s2-docs__search-s2-docs`) for anatomy, behaviors (keyboard focus, tooltip, cursor, transitions), usage guidance, and per-prop description. Fall back to the matching `spectrum-design-data/docs/s2-docs/components/<category>/<name>.md` if the MCP is unavailable. For cross-cutting design questions (focus ring spec, motion durations, icon sizing), read the relevant `spectrum-design-data/docs/s2-docs/designing/*.md`.
-4. **Cross-check visuals.** Look at `spectrum-css/components/<name>/index.css` and `themes/spectrum-two.css` to see exactly which tokens map to which selectors and states.
+4. **Cross-check visuals against CSS (secondary).** Look at `spectrum-css/components/<name>/index.css` and `themes/spectrum-two.css` to see which tokens map to which selectors and states. Useful for wiring details, but the CSS repo may lag behind `spectrum-design-data` — if they disagree, the schema and tokens win.
 5. **Find the Tk primitive.** Open the relevant `tcltk/man/mann/*.n` to see what ttk gives you and what you need to extend with image elements / custom layouts.
 6. **Implement** in the right file (`spectrum.tcl` for theme work, `components/Foo.tcl` for concrete components — see [docs/architecture.md](docs/architecture.md)).
 7. **Smoke test** before committing — see [docs/smoke_testing.md](docs/smoke_testing.md).

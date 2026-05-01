@@ -143,11 +143,15 @@ grid .nb.ind.prog.lindet .nb.ind.prog.indet -padx 6 -pady 6 -sticky w
 ttk::labelframe .nb.ind.scales -text "Scale" -padding 10
 ttk::scale .nb.ind.scales.s -from 0 -to 100 -length 280
 .nb.ind.scales.s set 35
+ttk::scale .nb.ind.scales.sd -from 0 -to 100 -length 280 -state disabled
+.nb.ind.scales.sd set 60
 scale .nb.ind.scales.cs -from 0 -to 100 -length 280 -orient horizontal -showvalue 1
 .nb.ind.scales.cs set 60
 ttk::label .nb.ind.scales.lt -text "ttk::scale"
+ttk::label .nb.ind.scales.ld -text "ttk::scale (disabled)"
 ttk::label .nb.ind.scales.lc -text "tk::scale"
 grid .nb.ind.scales.lt .nb.ind.scales.s  -padx 6 -pady 6 -sticky w
+grid .nb.ind.scales.ld .nb.ind.scales.sd -padx 6 -pady 6 -sticky w
 grid .nb.ind.scales.lc .nb.ind.scales.cs -padx 6 -pady 6 -sticky w
 
 grid .nb.ind.prog   -row 0 -column 0 -padx 4 -pady 4 -sticky nsew
